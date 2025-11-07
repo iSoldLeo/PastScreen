@@ -2,13 +2,15 @@
 //  FullScreenCaptureService.swift
 //  ScreenSnap
 //
-//  Simple full screen capture service
+//  Simple full screen capture service with display names
 //
 
 import Foundation
 import AppKit
 import ScreenCaptureKit
 import UserNotifications
+import CoreGraphics
+import IOKit
 
 @available(macOS 12.3, *)
 class FullScreenCaptureService: NSObject {
@@ -58,11 +60,12 @@ class FullScreenCaptureService: NSObject {
         alert.informativeText = "\(displays.count) écrans disponibles"
         alert.alertStyle = .informational
 
+        // Get NSScreens to match with SCDisplays
+        let nsScreens = NSScreen.screens
+
         for (index, display) in displays.enumerated() {
-            let screenName = "Écran \(index + 1)"
-            let dimensions = "\(display.width) × \(display.height)"
-            let buttonTitle = "\(screenName) (\(dimensions))"
-            alert.addButton(withTitle: buttonTitle)
+            let displayName = getDisplayName(for: display, at: index, nsScreens: nsScreens)
+            alert.addButton(withTitle: displayName)
         }
 
         alert.addButton(withTitle: "Annuler")
@@ -79,16 +82,84 @@ class FullScreenCaptureService: NSObject {
         }
     }
 
+    private func getDisplayName(for display: SCDisplay, at index: Int, nsScreens: [NSScreen]) -> String {
+        // Try to match SCDisplay with NSScreen by displayID
+        let displayID = display.displayID
+
+        // Check if this is the built-in display (main screen)
+        if let nsScreen = nsScreens.first(where: { screen in
+            // Get the display ID from NSScreen
+            guard let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
+                return false
+            }
+            return screenNumber == displayID
+        }) {
+            // Check if it's the main screen (built-in)
+            if nsScreen == NSScreen.main {
+                return "Écran intégré (\(display.width) × \(display.height))"
+            }
+        }
+
+        // Try to get external display name using IOKit
+        if let externalName = getExternalDisplayName(displayID: displayID) {
+            return "\(externalName) (\(display.width) × \(display.height))"
+        }
+
+        // Fallback
+        return "Écran \(index + 1) (\(display.width) × \(display.height))"
+    }
+
+    private func getExternalDisplayName(displayID: CGDirectDisplayID) -> String? {
+        // Get IOService port for the display
+        var servicePort: io_service_t = 0
+
+        var iterator: io_iterator_t = 0
+        let matching = IOServiceMatching("IODisplayConnect")
+
+        guard IOServiceGetMatchingServices(kIOMasterPortDefault, matching, &iterator) == KERN_SUCCESS else {
+            return nil
+        }
+
+        defer { IOObjectRelease(iterator) }
+
+        while true {
+            servicePort = IOIteratorNext(iterator)
+            if servicePort == 0 { break }
+
+            defer { IOObjectRelease(servicePort) }
+
+            // Get display info dictionary
+            guard let info = IODisplayCreateInfoDictionary(servicePort, IOOptionBits(kIODisplayOnlyPreferredName)).takeRetainedValue() as? [String: Any] else {
+                continue
+            }
+
+            // Get display product names dictionary
+            if let productNames = info[kDisplayProductName] as? [String: String],
+               let displayName = productNames["en_US"] ?? productNames.values.first {
+                return displayName
+            }
+        }
+
+        return nil
+    }
+
     private func captureScreen(index: Int) async {
+        print("🎯 [FULLSCREEN] Starting capture for screen \(index + 1)")
+
         do {
             let content = try await SCShareableContent.current
 
             guard index < content.displays.count else {
                 print("❌ [FULLSCREEN] Invalid screen index: \(index)")
+                await MainActor.run {
+                    showCaptureErrorAlert(message: "Index d'écran invalide")
+                }
                 return
             }
 
             let display = content.displays[index]
+
+            print("📐 [FULLSCREEN] Display: \(display.width)x\(display.height), ID: \(display.displayID)")
 
             // Create content filter for full screen
             let filter = SCContentFilter(display: display, excludingWindows: [])
@@ -97,40 +168,47 @@ class FullScreenCaptureService: NSObject {
             configuration.width = display.width
             configuration.height = display.height
             configuration.scalesToFit = false
-            configuration.showsCursor = true // Montrer le curseur pour écran complet
+            configuration.showsCursor = true
+
+            print("📸 [FULLSCREEN] Calling SCScreenshotManager.captureImage...")
 
             let image = try await SCScreenshotManager.captureImage(
                 contentFilter: filter,
                 configuration: configuration
             )
 
+            print("✅ [FULLSCREEN] Image captured: \(image.width)x\(image.height)")
+
             let nsImage = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
 
+            // Get display name for notification
+            let nsScreens = NSScreen.screens
+            let displayName = getDisplayName(for: display, at: index, nsScreens: nsScreens)
+
             await MainActor.run {
-                processCapture(image: nsImage, screenName: "Écran \(index + 1)")
+                processCapture(image: nsImage, screenName: displayName)
             }
 
-            print("✅ [FULLSCREEN] Captured screen \(index + 1)")
+            print("✅ [FULLSCREEN] Capture completed for \(displayName)")
 
         } catch {
-            print("❌ [FULLSCREEN] Error capturing screen: \(error)")
+            print("❌ [FULLSCREEN] Error capturing screen: \(error.localizedDescription)")
+            print("❌ [FULLSCREEN] Error details: \(error)")
             await MainActor.run {
-                showCaptureErrorAlert(error: error)
+                showCaptureErrorAlert(message: error.localizedDescription)
             }
         }
     }
 
     private func processCapture(image: NSImage, screenName: String) {
-        // Play sound if enabled
-        if AppSettings.shared.playSoundOnCapture {
-            NSSound(named: "Pop")?.play()
-        }
+        print("💾 [FULLSCREEN] Processing capture for \(screenName)")
 
         // Copy to clipboard if enabled
         if AppSettings.shared.copyToClipboard {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
-            pasteboard.writeObjects([image])
+            let success = pasteboard.writeObjects([image])
+            print("📋 [FULLSCREEN] Clipboard copy: \(success ? "✅ Success" : "❌ Failed")")
         }
 
         // Save to file if enabled
@@ -138,16 +216,25 @@ class FullScreenCaptureService: NSObject {
             saveToFile(image: image, screenName: screenName)
         }
 
+        // Play sound AFTER successful capture
+        if AppSettings.shared.playSoundOnCapture {
+            NSSound(named: "Glass")?.play()
+            print("🔊 [FULLSCREEN] Playing capture sound")
+        }
+
         // Show Dynamic Island notification
-        DynamicIslandManager.shared.show(message: "\(screenName) capturé", duration: 2.0)
+        DynamicIslandManager.shared.show(message: "Capturé", duration: 2.0)
 
         // Also show native notification
         showNotification(screenName: screenName)
+
+        print("✅ [FULLSCREEN] Processing complete")
     }
 
     private func saveToFile(image: NSImage, screenName: String) {
         guard let tiffData = image.tiffRepresentation,
               let bitmapImage = NSBitmapImageRep(data: tiffData) else {
+            print("❌ [FULLSCREEN] Failed to convert image for saving")
             return
         }
 
@@ -164,6 +251,7 @@ class FullScreenCaptureService: NSObject {
         }
 
         guard let data = bitmapImage.representation(using: fileType, properties: [:]) else {
+            print("❌ [FULLSCREEN] Failed to create image data")
             return
         }
 
@@ -171,25 +259,37 @@ class FullScreenCaptureService: NSObject {
         dateFormatter.dateFormat = "yyyy-MM-dd-HH-mm-ss"
         let timestamp = dateFormatter.string(from: Date())
 
-        let filename = "FullScreen-\(screenName)-\(timestamp).\(fileExtension)"
+        // Clean screen name for filename
+        let cleanName = screenName
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "(", with: "")
+            .replacingOccurrences(of: ")", with: "")
+            .replacingOccurrences(of: "×", with: "x")
+
+        let filename = "FullScreen-\(cleanName)-\(timestamp).\(fileExtension)"
 
         AppSettings.shared.ensureFolderExists()
         let filePath = AppSettings.shared.saveFolderPath + filename
 
-        try? data.write(to: URL(fileURLWithPath: filePath))
+        do {
+            try data.write(to: URL(fileURLWithPath: filePath))
+            print("💾 [FULLSCREEN] Saved to: \(filePath)")
 
-        // Post notification for "Reveal last screenshot" feature
-        NotificationCenter.default.post(
-            name: .screenshotCaptured,
-            object: nil,
-            userInfo: ["filePath": filePath]
-        )
+            // Post notification for "Reveal last screenshot" feature
+            NotificationCenter.default.post(
+                name: .screenshotCaptured,
+                object: nil,
+                userInfo: ["filePath": filePath]
+            )
+        } catch {
+            print("❌ [FULLSCREEN] Failed to save file: \(error)")
+        }
     }
 
     private func showNotification(screenName: String) {
         let content = UNMutableNotificationContent()
         content.title = "ScreenSnap"
-        content.body = "\(screenName) capturé en plein écran"
+        content.body = "\(screenName) capturé"
         content.sound = UNNotificationSound.default
 
         let request = UNNotificationRequest(
@@ -204,16 +304,16 @@ class FullScreenCaptureService: NSObject {
     private func showNoScreenAlert() {
         let alert = NSAlert()
         alert.messageText = "Aucun écran disponible"
-        alert.informativeText = "Impossible de détecter les écrans. Vérifiez les permissions."
+        alert.informativeText = "Impossible de détecter les écrans. Vérifiez les permissions d'enregistrement d'écran."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
         alert.runModal()
     }
 
-    private func showCaptureErrorAlert(error: Error) {
+    private func showCaptureErrorAlert(message: String) {
         let alert = NSAlert()
         alert.messageText = "Erreur de capture"
-        alert.informativeText = "Impossible de capturer l'écran : \(error.localizedDescription)"
+        alert.informativeText = "Impossible de capturer l'écran :\n\n\(message)\n\nVérifiez les permissions d'enregistrement d'écran dans Réglages Système."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
         alert.runModal()
