@@ -13,6 +13,7 @@ import Combine
 // Notification names
 extension Notification.Name {
     static let screenshotCaptured = Notification.Name("screenshotCaptured")
+    static let showInDockChanged = Notification.Name("showInDockChanged")
 }
 
 @main
@@ -111,6 +112,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             name: .screenshotCaptured,
             object: nil
         )
+
+        // Observer les changements du mode Dock
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleShowInDockChanged),
+            name: .showInDockChanged,
+            object: nil
+        )
+
+        // Configurer le mode initial (Dock ou menu bar seulement)
+        updateActivationPolicy()
 
         // Show onboarding if first launch
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -448,6 +460,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             NSEvent.removeMonitor(monitor)
             globalEventMonitor = nil
             print("❌ Raccourci clavier global supprimé")
+        }
+    }
+
+    // MARK: - Dock Icon Management
+
+    @objc func handleShowInDockChanged() {
+        updateActivationPolicy()
+    }
+
+    func updateActivationPolicy() {
+        let showInDock = settings.showInDock
+
+        if showInDock {
+            // Mode normal : icône dans le Dock + menu bar
+            NSApp.setActivationPolicy(.regular)
+            print("✅ [DOCK] Mode normal activé (icône Dock + menu bar)")
+        } else {
+            // Mode accessory : seulement menu bar (pas de Dock)
+            NSApp.setActivationPolicy(.accessory)
+            print("✅ [DOCK] Mode menu bar uniquement activé (pas de Dock)")
         }
     }
 }

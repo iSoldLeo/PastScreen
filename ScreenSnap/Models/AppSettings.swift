@@ -61,6 +61,14 @@ class AppSettings: ObservableObject {
         }
     }
 
+    @Published var showInDock: Bool {
+        didSet {
+            UserDefaults.standard.set(showInDock, forKey: "showInDock")
+            // Post notification to update activation policy
+            NotificationCenter.default.post(name: .showInDockChanged, object: nil)
+        }
+    }
+
     private init() {
         // Load saved values or use defaults
         self.copyToClipboard = UserDefaults.standard.object(forKey: "copyToClipboard") as? Bool ?? true
@@ -74,6 +82,7 @@ class AppSettings: ObservableObject {
         self.showDimensionsLabel = UserDefaults.standard.object(forKey: "showDimensionsLabel") as? Bool ?? true
         self.enableAnnotations = UserDefaults.standard.object(forKey: "enableAnnotations") as? Bool ?? true
         self.globalHotkeyEnabled = UserDefaults.standard.object(forKey: "globalHotkeyEnabled") as? Bool ?? true
+        self.showInDock = UserDefaults.standard.object(forKey: "showInDock") as? Bool ?? true  // Default: show in Dock
 
         ensureFolderExists()
     }
