@@ -31,7 +31,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     var statusItem: NSStatusItem?
     var statusMenu: NSMenu?  // Référence persistante au menu
     var screenshotService: ScreenshotService?
-    var fullScreenCaptureService: FullScreenCaptureService?
     var preferencesWindow: NSWindow?
     var preferencesWindowDelegate: PreferencesWindowDelegate?  // Strong reference
 
@@ -92,7 +91,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         // Initialize services
         screenshotService = ScreenshotService()
-        fullScreenCaptureService = FullScreenCaptureService()
 
         // Setup menu
         setupMenu()

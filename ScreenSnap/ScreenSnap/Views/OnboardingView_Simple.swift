@@ -35,19 +35,31 @@ class SimpleOnboardingManager {
             let alert = NSAlert()
             alert.messageText = "🎉 Bienvenue dans ScreenSnap!"
             alert.informativeText = """
+            ScreenSnap simplifie vos captures d'écran pour les développeurs.
 
-            ⌘  Raccourci principal
-                Appuyez sur ⌥⌘S pour capturer une zone
+            🚀 Pourquoi ScreenSnap ?
 
-            📋 Copie automatique
-                Le chemin du fichier est copié au clipboard
+            ⚡️ Ultra-rapide
+                ⌥⌘S → Capturer → Cmd+V → C'est collé !
+                (Plus besoin de chercher le fichier)
 
-            📁 Stockage temporaire
-                Les captures sont dans /tmp (parfait pour Zed)
+            🧹 Nettoyage automatique
+                Toutes vos captures vidées au redémarrage du Mac
+                (Fini les dossiers qui débordent)
 
-            ⚙️  Accès aux options
-                Cliquez sur l'icône menu bar pour les réglages
+            🔔 Notifications intelligentes
+                Cliquez pour ouvrir directement dans le Finder
+                (Comme les apps pro, pas comme la fonction native)
 
+            📋 Workflow optimisé
+                Capture → Clipboard → Coller dans votre IDE
+                (Parfait pour Cursor, Zed, VSCode)
+
+            ⚙️  Personnalisable
+                Icône menu bar → Préférences
+
+            vs. Capture macOS native : Fichiers sur le Bureau qui s'accumulent
+            vs. Autres apps : Interface complexe, pas de nettoyage auto
             """
 
             alert.alertStyle = .informational

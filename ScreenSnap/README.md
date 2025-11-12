@@ -1,169 +1,155 @@
-# ScreenSnap - Application Mac avec Liquid Glass UI
+# 📸 ScreenSnap
 
-Application macOS 14+ de capture d'écran avec interface Liquid Glass moderne.
+Application macOS pour captures d'écran rapides avec workflow optimisé pour développeurs.
 
-## 🚀 Démarrage rapide
+## ✨ Fonctionnalités
 
-### 1. Ouvrir le projet dans Xcode
+- 📸 **Capture de zone** : Sélection interactive avec aperçu des dimensions
+- 🖥️ **Capture plein écran** : Un clic pour tout l'écran
+- ⚡ **Ultra-rapide** : ⌥⌘S → Capturer → Cmd+V → Collé !
+- 📋 **Copie automatique** : Direct dans le clipboard pour coller dans votre IDE
+- 🧹 **Nettoyage auto** : Fichiers vidés au redémarrage du Mac
+- 🔔 **Notifications intelligentes** : Clic pour ouvrir dans Finder
+- ⚙️ **Personnalisable** : Format, son, raccourcis, stockage
 
+## 🚀 Installation
+
+### Depuis DMG (Recommandé)
+1. Télécharger `ScreenSnap-1.0.0.dmg`
+2. Monter le DMG
+3. Glisser `ScreenSnap.app` vers `Applications`
+4. Lancer depuis Applications
+5. Autoriser les permissions (Enregistrement d'écran + Accessibilité)
+
+### Depuis Sources
 ```bash
+git clone https://github.com/votre-repo/screensnap
+cd screensnap
 open ScreenSnap/ScreenSnap.xcodeproj
 ```
 
-### 2. Configuration initiale
-
-Dans Xcode :
-1. Sélectionnez le projet "ScreenSnap" dans le navigateur
-2. Onglet "Signing & Capabilities"
-3. Sélectionnez votre **Team** (votre compte développeur Apple)
-4. Vérifiez que "Bundle Identifier" est unique (ex: `com.augiefra.ScreenSnap`)
-
-### 3. Configurer les permissions
-
-1. Vérifiez que `Info.plist` est bien lié au target
-2. Vérifiez que `ScreenSnap.entitlements` est bien lié au target
-
-Dans "Signing & Capabilities" :
-- "App Sandbox" devrait être OFF (déjà configuré dans .entitlements)
-- "Hardened Runtime" devrait être activé
-
-### 4. Lancer l'application
-
-Appuyez sur `⌘R` dans Xcode.
-
-Au premier lancement, **macOS demandera les permissions** :
-- **Screen Recording** : Aller dans Préférences Système → Sécurité → Confidentialité → Enregistrement d'écran → Cocher "ScreenSnap"
-- **Accessibility** (si demandé) : Même chemin → Accessibilité
-
-## 📁 Structure du projet
-
-```
-ScreenSnap/
-├── Models/
-│   └── AppSettings.swift              # Gestion des préférences
-├── Services/
-│   ├── ScreenshotService.swift         # Capture d'écran basique
-│   └── WindowCaptureService.swift      # Capture de fenêtres (ScreenCaptureKit)
-├── Views/
-│   ├── MenuBarPopoverView.swift        # Popover menu bar
-│   └── SettingsView.swift              # Fenêtre de préférences
-├── Components/
-│   └── LiquidGlassComponents.swift     # Composants UI réutilisables
-└── ScreenSnapApp.swift                 # Point d'entrée
-```
-
-## ✨ Fonctionnalités implémentées
-
-### ✅ Core Features
-- Menu bar app (icône caméra)
-- Clic gauche : Popover avec actions rapides
-- Clic droit : Menu contextuel
-- Capture d'écran avec sélection de zone
-- **Capture de fenêtres spécifiques** (liste toutes les apps)
-- Copie automatique dans le presse-papiers (⌘V direct)
-- Sauvegarde optionnelle sur disque
-
-### 🎨 Design Liquid Glass
-- Overlay semi-transparent avec blur
-- Labels avec effets visuels
-- Animations spring fluides
-- UI moderne macOS 14+
-- Menu bar popover avec matériaux natifs
-
-### ⚙️ Settings
-- Toggle copie clipboard / sauvegarde fichier
-- Choix du format (PNG / JPEG)
-- Sélection du dossier de sauvegarde
-- Options d'affichage
+Puis : `Product → Archive → Export`
 
 ## 🎯 Utilisation
 
-### Capture d'écran standard
-1. Clic gauche sur l'icône menu bar (caméra)
-2. Cliquer sur "Capture d'écran"
-3. Sélectionner la zone en glissant la souris
-4. La capture est automatiquement copiée
+### Raccourcis Clavier
+- **⌥⌘S** : Capturer une zone
+- **Clic icône menu bar** : Menu complet
 
-### Capture de fenêtre
-1. Clic gauche sur l'icône menu bar
-2. Cliquer sur "Capturer une fenêtre"
-3. Choisir l'application/fenêtre dans la liste
-4. La fenêtre est capturée automatiquement
+### Menu Bar
+- 📸 Capturer une zone
+- 🖥️ Capturer l'écran complet
+- 📁 Voir la dernière capture
+- ⚙️ Préférences
+- Quitter
 
-### Coller dans un IDE
-Après capture, ouvrez votre IDE :
-- **VSCode** : `⌘V`
-- **Cursor** : `⌘V`
-- **Zed** : `⌘V`
-- Tout autre app supportant les images
+### Workflow
+1. Appuyer sur ⌥⌘S
+2. Sélectionner la zone
+3. Cmd+V dans votre IDE → C'est collé !
 
-## 🛠️ Prochaines étapes (TODO)
+## ⚙️ Configuration
 
-### Phase 1 : Outils d'annotation (priorité haute)
-- [ ] Toolbar d'annotation flottant
-- [ ] Outil Flèche
-- [ ] Outil Blur/Pixelate
-- [ ] Outil Texte
-- [ ] Outil Highlighter
-- [ ] Undo/Redo
+- **Format** : PNG (sans perte) ou JPEG (compressé)
+- **Stockage** : Dossier temporaire (nettoyé au reboot) ou permanent
+- **Options** : Son, dimensions, clipboard automatique
 
-### Phase 2 : Raccourcis clavier
-- [ ] Intégrer KeyboardShortcuts SPM
-- [ ] UI pour définir raccourcis personnalisés
-- [ ] Hotkey global pour capture rapide
+## 🛠️ Développement
 
-### Phase 3 : Features avancées
-- [ ] Preview/Historique des captures
-- [ ] OCR automatique (Vision framework)
-- [ ] Détection QR codes
-- [ ] Scrolling capture
+### Prérequis
+- macOS 12.3+ (Monterey)
+- Xcode 14+
+- Swift 5.9+
 
-## 🐛 Troubleshooting
+### Structure
+```
+ScreenSnap/
+├── ScreenSnap/
+│   ├── ScreenSnapApp.swift     # Point d'entrée
+│   ├── Models/                 # AppSettings
+│   ├── Views/                  # SwiftUI views
+│   ├── Services/               # Screenshot, Permissions
+│   └── Utils/                  # Logger
+└── README.md
+```
 
-### L'icône n'apparaît pas dans la menu bar
-- Vérifiez que `LSUIElement = true` dans Info.plist
-- Relancez l'application
+### Build
+```bash
+cd ScreenSnap
+xcodebuild -scheme ScreenSnap -configuration Release build
+```
 
-### Les permissions sont refusées
-- Aller dans Préférences Système → Sécurité → Confidentialité
-- Cocher "ScreenSnap" dans "Enregistrement d'écran"
-- Redémarrer l'application
+### Distribution
+Voir `DISTRIBUTION_XCODE.md` pour créer le DMG avec glisser-déposer.
 
-### La capture de fenêtre ne fonctionne pas
-- Nécessite macOS 12.3+ pour ScreenCaptureKit
-- Vérifier les permissions d'enregistrement d'écran
-- Certaines fenêtres système ne peuvent pas être capturées (sécurité macOS)
+## 📦 Créer le DMG
 
-### Erreurs de compilation
-- Vérifier que le deployment target est macOS 14.0+
-- Vérifier que tous les fichiers sont bien dans le target
-- Clean build folder (`⌘⇧K`) puis rebuild
+```bash
+# Installer create-dmg
+brew install create-dmg
 
-## 📝 Notes de développement
+# Créer le DMG
+create-dmg \
+  --volname "ScreenSnap" \
+  --window-size 600 400 \
+  --icon-size 100 \
+  --app-drop-link 425 190 \
+  "ScreenSnap-1.0.0.dmg" \
+  "path/to/ScreenSnap.app"
+```
 
-### Frameworks utilisés
-- **SwiftUI** : Interface utilisateur moderne
-- **AppKit** : Menu bar et fenêtres système
-- **ScreenCaptureKit** : Capture de fenêtres (macOS 12.3+)
-- **CoreGraphics** : Manipulation d'images
-- **UserNotifications** : Notifications modernes
+Guide complet : `DISTRIBUTION_XCODE.md`
 
-### Architecture
-- **MVVM** : Séparation claire modèle/vue
-- **Singleton** : AppSettings pour les préférences
-- **NotificationCenter** : Communication entre services
-- **@AppStorage** : Persistence automatique des settings
+## 🌍 Localisation (V1.1)
 
-### Performance
-- Capture optimisée via CGDisplayCreateImage
-- Async/await pour ScreenCaptureKit
-- Lazy loading des fenêtres disponibles
-- Weak references pour éviter les retain cycles
+Traductions prêtes pour V1.1 :
+- 🇬🇧 English
+- 🇫🇷 Français
+- 🇪🇸 Español
+- 🇮🇹 Italiano
+- 🇩🇪 Deutsch
+
+Voir `docs/v1.1/` pour intégration.
+
+## 📝 Permissions Requises
+
+- **Enregistrement d'écran** : Pour capturer l'écran
+- **Accessibilité** : Pour le raccourci clavier global ⌥⌘S
+
+Configurées automatiquement au premier lancement.
+
+## 🤝 Contribution
+
+Les contributions sont bienvenues !
+
+1. Fork le projet
+2. Créer une branche (`git checkout -b feature/amelioration`)
+3. Commit (`git commit -m 'Ajout fonctionnalité'`)
+4. Push (`git push origin feature/amelioration`)
+5. Ouvrir une Pull Request
 
 ## 📄 Licence
 
-MIT License - Voir LICENSE file
+MIT License - Voir `LICENSE`
+
+## 🔗 Liens
+
+- Documentation : `CLAUDE.md`
+- Distribution : `DISTRIBUTION_XCODE.md`
+- Localisation V1.1 : `docs/v1.1/`
+
+## ✨ Pourquoi ScreenSnap ?
+
+### vs. Capture macOS Native
+❌ Fichiers s'accumulent sur le Bureau  
+✅ Nettoyage automatique au redémarrage
+
+### vs. Autres Apps
+❌ Interface complexe, pas de nettoyage auto  
+✅ Simple, rapide, workflow optimisé développeurs
 
 ---
 
-Développé avec ❤️ et Claude Code
+**Version** : 1.0.0  
+**Compatibilité** : macOS 12.3+  
+**Auteur** : Eric COLOGNI
