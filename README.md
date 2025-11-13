@@ -1,44 +1,44 @@
 # 📸 ScreenSnap
 
-**Captures d'écran ultra-rapides pour développeurs**
+**Ultra-fast screenshots for developers**
 
-Application macOS avec workflow optimisé : Capturez → ⌘V → Collé dans votre IDE !
+macOS app with optimized workflow: Capture → ⌘V → Paste into your IDE!
 
 [![Version](https://img.shields.io/badge/version-1.1-blue.svg)](https://github.com/augiefra/ScreenSnap/releases/tag/v1.1)
 [![Platform](https://img.shields.io/badge/platform-macOS%2013.0%2B-lightgrey.svg)](https://www.apple.com/macos)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-## ✨ Nouveautés v1.1
+## ✨ What's New in v1.1
 
-- 🎨 **Onboarding Moderne** : Interface liquid glass avec 4 pages animées
-- 🌍 **Multilingue** : Support complet FR/EN/ES/DE/IT
-- 🖼️ **Toggle Dock** : Choisissez d'afficher ou non l'icône dans le Dock
-- 📐 **Préférences Améliorées** : Interface agrandie et optimisée
-- 🧹 **Nettoyage** : Suppression des options non fonctionnelles
+- 🎨 **Modern Onboarding** : Liquid glass interface with 4 animated pages
+- 🌍 **Multilingual** : Full support for FR/EN/ES/DE/IT
+- 🖼️ **Dock Toggle** : Choose to show or hide the Dock icon
+- 📐 **Improved Preferences** : Larger and optimized interface
+- 🧹 **Cleanup** : Removed non-functional settings
 
-## 🚀 Fonctionnalités
+## 🚀 Features
 
-- 📸 **Capture de zone** : Sélection interactive avec overlay translucide
-- 🖥️ **Capture plein écran** : Un clic pour tout capturer
-- ⚡ **Ultra-rapide** : ⌘⇧5 → Capturer → ⌘V → Collé !
-- 📋 **Copie automatique** : Direct dans le clipboard pour vos IDEs
-- 🧹 **Nettoyage auto** : Fichiers temporaires vidés au redémarrage
-- 🔔 **Notifications** : Cliquez pour ouvrir dans Finder
-- 🎨 **Interface moderne** : Onboarding liquid glass style Apple
-- 🌍 **Multilingue** : Français, English, Español, Deutsch, Italiano
-- ⚙️ **Personnalisable** : Format, son, raccourcis, stockage, Dock
+- 📸 **Area Capture** : Interactive selection with translucent overlay
+- 🖥️ **Full Screen Capture** : One click to capture everything
+- ⚡ **Ultra-fast** : ⌘⇧5 → Capture → ⌘V → Pasted!
+- 📋 **Auto-copy** : Direct to clipboard for your IDEs
+- 🧹 **Auto-cleanup** : Temp files cleared on reboot
+- 🔔 **Notifications** : Click to open in Finder
+- 🎨 **Modern Interface** : Liquid glass onboarding Apple-style
+- 🌍 **Multilingual** : French, English, Spanish, German, Italian
+- ⚙️ **Customizable** : Format, sound, shortcuts, storage, Dock
 
 ## 💾 Installation
 
-### Depuis DMG (Recommandé)
+### From DMG (Recommended)
 
-1. **Télécharger** : [ScreenSnap-1.1.dmg](https://github.com/augiefra/ScreenSnap/releases/latest)
-2. **Monter** le DMG
-3. **Glisser** `ScreenSnap.app` vers `Applications`
-4. **Lancer** depuis Applications
-5. **Autoriser** les permissions (Enregistrement d'écran + Accessibilité)
+1. **Download** : [ScreenSnap-1.1.dmg](https://github.com/augiefra/ScreenSnap/releases/latest)
+2. **Mount** the DMG
+3. **Drag** `ScreenSnap.app` to `Applications`
+4. **Launch** from Applications
+5. **Grant** permissions (Screen Recording + Accessibility)
 
-### Depuis Sources
+### From Source
 
 ```bash
 git clone https://github.com/augiefra/ScreenSnap
@@ -46,78 +46,78 @@ cd ScreenSnap
 open ScreenSnap.xcodeproj
 ```
 
-Puis : `Product → Archive → Export`
+Then: `Product → Archive → Export`
 
-## 🎯 Utilisation
+## 🎯 Usage
 
-### Raccourcis Clavier
+### Keyboard Shortcuts
 
-- **⌘⇧5** : Capturer une zone (raccourci par défaut)
-- **Clic icône menu bar** : Ouvrir le menu complet
+- **⌘⇧5** : Capture area (default shortcut)
+- **Click menu bar icon** : Open full menu
 
 ### Menu Bar
 
-- 📸 Capturer une zone ⌘⇧5
-- 🖥️ Capturer l'écran complet
-- 📁 Afficher la dernière capture
-- ⚙️ Préférences...
-- ❌ Quitter ScreenSnap
+- 📸 Capture Area ⌘⇧5
+- 🖥️ Capture Full Screen
+- 📁 Show Last Screenshot
+- ⚙️ Preferences...
+- ❌ Quit ScreenSnap
 
-### Workflow Développeur
+### Developer Workflow
 
 ```
-1. ⌘⇧5 (ou clic menu bar)
-2. Sélectionner la zone à capturer
-3. ⌘V dans Cursor/VSCode/Zed
-   → Image collée directement !
+1. ⌘⇧5 (or click menu bar)
+2. Select the area to capture
+3. ⌘V in Cursor/VSCode/Zed
+   → Image pasted directly!
 ```
 
-**Parfait pour :**
-- Coller des screenshots dans Claude Code, Cursor, Zed, VSCode
-- Partager des bugs sur Slack, Discord, Linear, GitHub Issues
-- Documenter dans Figma, Notion, Obsidian
+**Perfect for:**
+- Pasting screenshots into Claude Code, Cursor, Zed, VSCode
+- Sharing bugs on Slack, Discord, Linear, GitHub Issues
+- Documenting in Figma, Notion, Obsidian
 
 ## ⚙️ Configuration
 
-### Onglet Général
-- ✅ Afficher l'icône dans le Dock
-- ✅ Copier dans le presse-papiers (auto)
-- 🔊 Jouer un son lors de la capture
-- 📋 Afficher le tutoriel de démarrage
+### General Tab
+- ✅ Show icon in Dock
+- ✅ Copy to clipboard (auto)
+- 🔊 Play sound on capture
+- 📋 Show startup tutorial
 
-### Onglet Capture
-- 🖼️ **Format** : PNG (sans perte) ou JPEG (compressé)
-- ⌨️ **Raccourci** : Configurable (défaut ⌘⇧5)
-- 🎹 Activer le raccourci global
+### Capture Tab
+- 🖼️ **Format** : PNG (lossless) or JPEG (compressed)
+- ⌨️ **Shortcut** : Customizable (default ⌘⇧5)
+- 🎹 Enable global shortcut
 
-### Onglet Stockage
-- 💾 **Enregistrer sur le disque** : Optionnel
-- 📁 **Dossier** : Temp (auto-nettoyé) ou permanent
-- 🗑️ **Vider le dossier** : Nettoyage manuel
+### Storage Tab
+- 💾 **Save to disk** : Optional
+- 📁 **Folder** : Temp (auto-cleaned) or permanent
+- 🗑️ **Clear folder** : Manual cleanup
 
-## 🌍 Langues Supportées
+## 🌍 Supported Languages
 
-ScreenSnap détecte automatiquement la langue système :
+ScreenSnap automatically detects system language:
 
-- 🇫🇷 **Français** - Interface complète + onboarding
+- 🇫🇷 **Français** - Full interface + onboarding
 - 🇬🇧 **English** - Full interface + onboarding
-- 🇪🇸 **Español** - Interfaz completa + onboarding
-- 🇩🇪 **Deutsch** - Vollständige Oberfläche + Onboarding
-- 🇮🇹 **Italiano** - Interfaccia completa + onboarding
+- 🇪🇸 **Español** - Full interface + onboarding
+- 🇩🇪 **Deutsch** - Full interface + onboarding
+- 🇮🇹 **Italiano** - Full interface + onboarding
 
-## 🛠️ Développement
+## 🛠️ Development
 
-### Prérequis
+### Prerequisites
 - macOS 13.0+ (Ventura)
 - Xcode 15+
 - Swift 5.9+
 
-### Structure du Projet
+### Project Structure
 
 ```
 ScreenSnap/
 ├── ScreenSnap/
-│   ├── ScreenSnapApp.swift           # Point d'entrée AppKit
+│   ├── ScreenSnapApp.swift           # AppKit entry point
 │   ├── Models/
 │   │   └── AppSettings.swift         # Singleton settings
 │   ├── Views/
@@ -136,12 +136,12 @@ ScreenSnap/
 
 ### Technologies
 
-- **SwiftUI** : Interface moderne (onboarding, préférences)
-- **AppKit** : Menu bar, fenêtres, sélection overlay
-- **Carbon API** : Raccourcis clavier globaux
-- **CGDisplayImage** : Capture d'écran native
-- **NSPasteboard** : Gestion clipboard
-- **UserDefaults** : Persistance settings
+- **SwiftUI** : Modern interface (onboarding, preferences)
+- **AppKit** : Menu bar, windows, selection overlay
+- **Carbon API** : Global keyboard shortcuts
+- **CGDisplayImage** : Native screen capture
+- **NSPasteboard** : Clipboard management
+- **UserDefaults** : Settings persistence
 
 ### Build
 
@@ -153,19 +153,19 @@ xcodebuild -scheme ScreenSnap -configuration Debug build
 xcodebuild -scheme ScreenSnap -configuration Release build
 ```
 
-### Créer le DMG
+### Create DMG
 
 ```bash
-# Installer create-dmg
+# Install create-dmg
 brew install create-dmg
 
 # Build Release
 xcodebuild -scheme ScreenSnap -configuration Release build
 
-# Copier l'app
+# Copy app
 cp -R ~/Library/Developer/Xcode/DerivedData/.../ScreenSnap.app ~/Desktop/
 
-# Créer le DMG
+# Create DMG
 create-dmg \
   --volname "ScreenSnap" \
   --background "dmg-background.png" \
@@ -176,101 +176,101 @@ create-dmg \
   "~/Desktop/ScreenSnap.app"
 ```
 
-## 📝 Permissions Requises
+## 📝 Required Permissions
 
-### Enregistrement d'écran
-**Pourquoi ?** Pour capturer le contenu de l'écran
+### Screen Recording
+**Why?** To capture screen content
 
-**Comment ?** Système → Confidentialité → Enregistrement d'écran → ✅ ScreenSnap
+**How?** System Settings → Privacy & Security → Screen Recording → ✅ ScreenSnap
 
-### Accessibilité
-**Pourquoi ?** Pour le raccourci clavier global ⌘⇧5
+### Accessibility
+**Why?** For global keyboard shortcut ⌘⇧5
 
-**Comment ?** Système → Confidentialité → Accessibilité → ✅ ScreenSnap
+**How?** System Settings → Privacy & Security → Accessibility → ✅ ScreenSnap
 
-⚠️ **Ces permissions sont demandées automatiquement au premier lancement**
+⚠️ **These permissions are automatically requested on first launch**
 
-## ✨ Pourquoi ScreenSnap ?
+## ✨ Why ScreenSnap?
 
-### vs. Capture macOS Native
+### vs. macOS Native Capture
 | Native | ScreenSnap |
 |--------|------------|
-| ❌ Fichiers s'accumulent sur le Bureau | ✅ Nettoyage automatique au redémarrage |
-| ❌ Pas de raccourci personnalisé | ✅ Raccourcis configurables |
-| ❌ Interface basique | ✅ Onboarding moderne liquid glass |
+| ❌ Files accumulate on Desktop | ✅ Auto-cleanup on reboot |
+| ❌ No custom shortcuts | ✅ Configurable shortcuts |
+| ❌ Basic interface | ✅ Modern liquid glass onboarding |
 
-### vs. Autres Apps de Screenshot
-| Autres Apps | ScreenSnap |
-|-------------|------------|
-| ❌ Interface complexe | ✅ Simple et rapide |
-| ❌ Pas de nettoyage auto | ✅ Workflow "jetable" optimisé |
-| ❌ Mono-langue | ✅ Multilingue (5 langues) |
-| ❌ Dock encombré | ✅ Mode menu bar uniquement |
+### vs. Other Screenshot Apps
+| Other Apps | ScreenSnap |
+|------------|------------|
+| ❌ Complex interface | ✅ Simple and fast |
+| ❌ No auto-cleanup | ✅ Optimized "disposable" workflow |
+| ❌ Single language | ✅ Multilingual (5 languages) |
+| ❌ Cluttered Dock | ✅ Menu bar only mode |
 
-### Workflow Optimisé Développeurs
+### Developer-Optimized Workflow
 
 ```
-Problème : Capturer un bug → Trouver le fichier → L'envoyer
-Solution : ⌘⇧5 → ⌘V → Déjà collé dans Slack !
+Problem: Capture bug → Find file → Send it
+Solution: ⌘⇧5 → ⌘V → Already pasted in Slack!
 
-Problème : Screenshots partout sur le Bureau
-Solution : Auto-cleanup au redémarrage → Bureau toujours propre
+Problem: Screenshots everywhere on Desktop
+Solution: Auto-cleanup on reboot → Always clean Desktop
 
-Problème : Interface complexe avec 20 options
-Solution : 3 clics max pour configurer, workflow immédiat
+Problem: Complex interface with 20 options
+Solution: 3 clicks max to configure, instant workflow
 ```
 
-## 🤝 Contribution
+## 🤝 Contributing
 
-Les contributions sont bienvenues !
+Contributions are welcome!
 
-1. **Fork** le projet
-2. **Créer** une branche (`git checkout -b feature/amelioration`)
-3. **Commit** (`git commit -m 'feat: Ajout fonctionnalité'`)
-4. **Push** (`git push origin feature/amelioration`)
-5. **Ouvrir** une Pull Request
+1. **Fork** the project
+2. **Create** a branch (`git checkout -b feature/improvement`)
+3. **Commit** (`git commit -m 'feat: Add feature'`)
+4. **Push** (`git push origin feature/improvement`)
+5. **Open** a Pull Request
 
 ### Guidelines
 
-- Code Swift propre (SwiftLint)
-- Tests pour nouvelles fonctionnalités
-- Documentation en français ET anglais
-- Commit messages conventionnels (feat/fix/docs/refactor)
+- Clean Swift code (SwiftLint)
+- Tests for new features
+- Documentation in English
+- Conventional commit messages (feat/fix/docs/refactor)
 
-## 📄 Licence
+## 📄 License
 
-MIT License - Voir [LICENSE](LICENSE)
+MIT License - See [LICENSE](LICENSE)
 
-## 🔗 Liens Utiles
+## 🔗 Useful Links
 
 - **Documentation** : [CLAUDE.md](CLAUDE.md)
 - **Releases** : [GitHub Releases](https://github.com/augiefra/ScreenSnap/releases)
 - **Issues** : [GitHub Issues](https://github.com/augiefra/ScreenSnap/issues)
-- **Changelog** : Voir releases pour historique complet
+- **Changelog** : See releases for complete history
 
 ## 🎉 Changelog v1.1
 
-### Ajouté
-- ✨ Onboarding moderne avec liquid glass effect et 4 pages animées
-- 🌍 Support multilingue complet (FR/EN/ES/DE/IT)
-- 🖼️ Toggle pour afficher/masquer l'icône Dock
-- 📐 Fenêtre de préférences agrandie (600x500)
+### Added
+- ✨ Modern onboarding with liquid glass effect and 4 animated pages
+- 🌍 Complete multilingual support (FR/EN/ES/DE/IT)
+- 🖼️ Toggle to show/hide Dock icon
+- 📐 Larger preferences window (600x500)
 
-### Amélioré
-- 🧹 Nettoyage des préférences (suppression options non fonctionnelles)
-- 🎨 Interface onboarding avec animations spring
-- 📝 Traductions natives pour toutes les langues
+### Improved
+- 🧹 Cleaned up preferences (removed non-functional options)
+- 🎨 Onboarding interface with spring animations
+- 📝 Native translations for all languages
 
-### Technique
-- SwiftUI animations fluides
-- NSLocalizedString pour i18n
-- VisualEffectBlur pour liquid glass
+### Technical
+- Fluid SwiftUI animations
+- NSLocalizedString for i18n
+- VisualEffectBlur for liquid glass
 - Backward compatibility via typealias
 
 ---
 
 **Version** : 1.1
 **Build** : 3
-**Compatibilité** : macOS 13.0+ (Ventura, Sonoma, Sequoia)
-**Auteur** : Eric COLOGNI
+**Compatibility** : macOS 13.0+ (Ventura, Sonoma, Sequoia)
+**Author** : Eric COLOGNI
 **License** : MIT
