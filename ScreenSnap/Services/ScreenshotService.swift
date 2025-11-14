@@ -21,9 +21,9 @@ enum AppCategory {
     case unknown
 }
 
-class ScreenshotService: NSObject {
-    private var captureTask: Process?
+class ScreenshotService: NSObject, SelectionWindowDelegate {
     private var previousApp: NSRunningApplication? // Store app that was active before capture
+    private var selectionWindow: SelectionWindow? // Custom selection window
 
     // Bundle IDs of known applications
     private let appCategoryMap: [String: AppCategory] = [
@@ -74,139 +74,47 @@ class ScreenshotService: NSObject {
         "com.framerx.Framer": .designTool
     ]
 
-    override init() {
-        super.init()
-        setupNotificationObservers()
-    }
-
-    func setupNotificationObservers() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleScreenshotRequest),
-            name: .screenshotRequested,
-            object: nil
-        )
-    }
-
-    @objc func handleScreenshotRequest() {
-        captureScreenshot()
-    }
-
     func captureScreenshot() {
-        print("🎬 [SERVICE] Début de la capture avec screencapture natif...")
+        print("🎬 [SERVICE] Launching SelectionWindow for area capture...")
 
-        // Créer un fichier temporaire
-        let timestamp = Date().timeIntervalSince1970
-        let filename = "ScreenSnap-\(Int(timestamp)).png"
-        let tempPath = (NSTemporaryDirectory() as NSString).appendingPathComponent(filename)
+        // Create and show custom selection window
+        selectionWindow = SelectionWindow()
+        selectionWindow?.selectionDelegate = self
+        selectionWindow?.makeKeyAndOrderFront(nil)
 
-        // Lancer screencapture en mode interactif
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        process.arguments = [
-            "-i",           // Interactive mode (selection)
-            "-o",           // No shadow
-            tempPath        // Output file
-        ]
-
-        process.terminationHandler = { [weak self] process in
-            DispatchQueue.main.async {
-                self?.handleScreencaptureCompletion(exitCode: process.terminationStatus, filePath: tempPath)
-            }
-        }
-
-        do {
-            try process.run()
-            self.captureTask = process
-            print("✅ [SERVICE] screencapture lancé - sélectionnez une zone")
-        } catch {
-            print("❌ [SERVICE] Erreur lancement screencapture: \(error)")
-            showErrorAlert(NSLocalizedString("error.unable_to_launch", comment: ""))
-        }
+        print("✅ [SERVICE] SelectionWindow displayed - select area or press ESC to cancel")
     }
 
-    // NEW: Full screen capture using native screencapture utility
+    // NEW: Full screen capture using ScreenCaptureKit
     func captureFullScreen() {
-        print("🎬 [SERVICE] Début de la capture plein écran avec screencapture natif...")
+        print("🎬 [SERVICE] Starting full screen capture with ScreenCaptureKit...")
 
-        // Créer un fichier temporaire
-        let timestamp = Date().timeIntervalSince1970
-        let filename = "ScreenSnap-FullScreen-\(Int(timestamp)).png"
-        let tempPath = (NSTemporaryDirectory() as NSString).appendingPathComponent(filename)
+        // Calculate combined frame covering all screens
+        let screenFrame = NSScreen.screens.reduce(NSRect.zero) { $0.union($1.frame) }
 
-        // Lancer screencapture pour capturer l'écran principal
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        process.arguments = [
-            "-m",           // Capture main display
-            "-o",           // No shadow
-            tempPath        // Output file
-        ]
-
-        process.terminationHandler = { [weak self] process in
-            DispatchQueue.main.async {
-                self?.handleScreencaptureCompletion(exitCode: process.terminationStatus, filePath: tempPath)
-            }
-        }
-
-        do {
-            try process.run()
-            self.captureTask = process
-            print("✅ [SERVICE] screencapture lancé pour écran complet")
-        } catch {
-            print("❌ [SERVICE] Erreur lancement screencapture: \(error)")
-            showErrorAlert(NSLocalizedString("error.unable_to_launch", comment: ""))
-        }
+        print("✅ [SERVICE] Capturing full screen area: \(screenFrame)")
+        performCapture(rect: screenFrame)
     }
 
-    private func handleScreencaptureCompletion(exitCode: Int32, filePath: String) {
-        captureTask = nil
+    // MARK: - SelectionWindowDelegate
 
-        // Si l'utilisateur annule (ESC), exitCode = 1
-        guard exitCode == 0 else {
-            print("❌ [SERVICE] Capture annulée (exit code: \(exitCode))")
-            try? FileManager.default.removeItem(atPath: filePath)
-            return
-        }
+    func selectionWindow(_ window: SelectionWindow, didSelectRect rect: CGRect) {
+        print("📐 [SELECTION] User selected rect: \(rect)")
 
-        // Vérifier que le fichier existe
-        guard FileManager.default.fileExists(atPath: filePath) else {
-            print("❌ [SERVICE] Fichier de capture introuvable")
-            return
-        }
+        // Hide selection window
+        window.orderOut(nil)
+        selectionWindow = nil
 
-        print("✅ [SERVICE] Capture réussie: \(filePath)")
+        // Perform capture with selected rectangle
+        performCapture(rect: rect)
+    }
 
-        // Load image and use smart clipboard detection
-        if let image = NSImage(contentsOfFile: filePath) {
-            copyToClipboard(image: image)
-        } else {
-            // Fallback: copy path if image load fails
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.setString(filePath, forType: .string)
-            print("⚠️ [SERVICE] Failed to load image, copying path instead")
-        }
+    func selectionWindowDidCancel(_ window: SelectionWindow) {
+        print("❌ [SELECTION] User cancelled selection")
 
-        // Jouer le son "Glass" (comme dans le script bash)
-        if AppSettings.shared.playSoundOnCapture {
-            NSSound(named: "Glass")?.play()
-        }
-
-        // Pilule dans la barre de menus
-        print("🔵 [SERVICE] Affichage de la pilule...")
-        DynamicIslandManager.shared.show(message: "Saved", duration: 3.0)
-
-        // Notifier l'app delegate pour mettre à jour lastScreenshotPath
-        NotificationCenter.default.post(
-            name: .screenshotCaptured,
-            object: nil,
-            userInfo: ["filePath": filePath]
-        )
-
-        // Notification native macOS (comme le script bash)
-        print("🔔 [SERVICE] Envoi de la notification...")
-        showNativeNotification(filePath: filePath)
+        // Hide and cleanup selection window
+        window.orderOut(nil)
+        selectionWindow = nil
     }
     
     // Traitement unifié de l'image capturée
@@ -284,27 +192,43 @@ class ScreenshotService: NSObject {
         alert.alertStyle = .warning
         alert.runModal()
     }
-    
+
+    // MARK: - Notification Routing
+
+    /// Détecte si l'app est en mode .accessory (menu bar only)
+    private func shouldUseCustomNotifications() -> Bool {
+        return NSApp.activationPolicy() == .accessory
+    }
+
     private func showNativeNotification(filePath: String) {
-        // Note: UNUserNotification doesn't work for .accessory apps
-        // The DynamicIslandManager pill provides sufficient feedback
-        let notification = UNMutableNotificationContent()
-        notification.title = "📸 Screenshot Ready"
-        notification.body = "Click to reveal in Finder"
-        notification.sound = nil  // Le son est déjà joué
-        notification.userInfo = ["filePath": filePath]
+        if shouldUseCustomNotifications() {
+            // Use CustomNotificationManager for .accessory mode (menu bar only)
+            CustomNotificationManager.shared.show(
+                title: "📸 Screenshot Ready",
+                message: "Click to reveal in Finder",
+                filePath: filePath
+            )
+            print("✅ [NOTIF] CustomNotificationManager shown (.accessory mode)")
+        } else {
+            // Use UNUserNotification for .regular mode (Dock visible)
+            let notification = UNMutableNotificationContent()
+            notification.title = "📸 Screenshot Ready"
+            notification.body = "Click to reveal in Finder"
+            notification.sound = nil  // Le son est déjà joué
+            notification.userInfo = ["filePath": filePath]
 
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: notification,
-            trigger: nil
-        )
+            let request = UNNotificationRequest(
+                identifier: UUID().uuidString,
+                content: notification,
+                trigger: nil
+            )
 
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("❌ [NOTIF] UNUserNotification error: \(error)")
-            } else {
-                print("✅ [NOTIF] UNUserNotification sent (won't display for .accessory apps)")
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ [NOTIF] UNUserNotification error: \(error)")
+                } else {
+                    print("✅ [NOTIF] UNUserNotification sent (.regular mode)")
+                }
             }
         }
 
@@ -625,20 +549,31 @@ class ScreenshotService: NSObject {
     }
 
     private func showModernNotification() {
-        // Note: UNUserNotification doesn't work for .accessory apps
-        let content = UNMutableNotificationContent()
-        content.title = "📸 ScreenSnap"
-        content.body = "Capture d'écran enregistrée"
-        content.sound = nil
-        content.categoryIdentifier = "SCREENSHOT_CAPTURE"
+        if shouldUseCustomNotifications() {
+            // Use CustomNotificationManager for .accessory mode (menu bar only)
+            CustomNotificationManager.shared.show(
+                title: "📸 ScreenSnap",
+                message: "Capture d'écran enregistrée",
+                filePath: nil
+            )
+            print("✅ [NOTIF] CustomNotificationManager shown (.accessory mode)")
+        } else {
+            // Use UNUserNotification for .regular mode (Dock visible)
+            let content = UNMutableNotificationContent()
+            content.title = "📸 ScreenSnap"
+            content.body = "Capture d'écran enregistrée"
+            content.sound = nil
+            content.categoryIdentifier = "SCREENSHOT_CAPTURE"
 
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
-        )
+            let request = UNNotificationRequest(
+                identifier: UUID().uuidString,
+                content: content,
+                trigger: nil
+            )
 
-        UNUserNotificationCenter.current().add(request)
+            UNUserNotificationCenter.current().add(request)
+            print("✅ [NOTIF] UNUserNotification sent (.regular mode)")
+        }
 
         // Visual feedback via DynamicIslandManager pill + screen flash
         showScreenFlash()

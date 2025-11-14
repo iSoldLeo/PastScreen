@@ -4,18 +4,25 @@
 
 macOS app with optimized workflow: Capture → ⌘V → Paste into your IDE!
 
-[![Version](https://img.shields.io/badge/version-1.3-blue.svg)](https://github.com/augiefra/ScreenSnap/releases/tag/v1.3)
+[![Version](https://img.shields.io/badge/version-1.4-blue.svg)](https://github.com/augiefra/ScreenSnap/releases/tag/v1.4)
 [![Platform](https://img.shields.io/badge/platform-macOS%2013.0%2B-lightgrey.svg)](https://www.apple.com/macos)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-## ✨ What's New in v1.3
+## ✨ What's New in v1.4
 
-- 🎨 **Redesigned Onboarding** : Improved layout with better spacing and visual hierarchy
-  - Larger window (620x640) for comfortable viewing
-  - Optimized spacing between elements
-  - Better permission request flow
-- 🐛 **Bug Fixes** : Fixed onboarding display issues and crash on close
-- ✨ **Polish** : Enhanced overall user experience
+- 🔄 **Auto-Update System** : Automatic updates via Sparkle (GitHub Releases)
+  - Check for updates from menu or automatically on startup
+  - Secure EdDSA signature verification
+  - One-click install for new versions
+- 🎨 **Native Selection Window** : Custom overlay replaces system screencapture binary
+  - Smoother selection experience
+  - Multi-monitor support
+  - Modern ScreenCaptureKit API
+- 🔔 **Reliable Notifications** : Fixed notifications in menu bar-only mode
+  - Custom notifications when Dock icon is hidden
+  - System notifications when Dock icon is visible
+  - Always get feedback on successful captures
+- 🗑️ **Code Cleanup** : Removed legacy dependencies and unused code
 
 ## 🚀 Features
 
@@ -230,6 +237,46 @@ MIT License - See [LICENSE](LICENSE)
 
 ## 🎉 Changelog
 
+### v1.4 - Architecture Modernization (2025-01-14)
+
+**Added**
+- 🔄 **Auto-Update System via Sparkle**
+  - Automatic update checking on startup (optional)
+  - Menu item "Check for Updates..." for manual checks
+  - Secure EdDSA signature verification
+  - Download and install updates with one click
+  - See [SPARKLE_INTEGRATION.md](SPARKLE_INTEGRATION.md) for setup guide
+- 🎨 **Native Selection Window**
+  - Custom overlay replaces macOS `screencapture` binary
+  - Smoother selection experience with translucent overlay
+  - Full multi-monitor support
+  - ESC to cancel selection
+
+**Improved**
+- 🏗️ **Modernized Capture Stack**
+  - All captures now use ScreenCaptureKit API (no external dependencies)
+  - Replaced Process-based screencapture with native Swift implementation
+  - Better performance and reliability
+  - Improved error handling with detailed logging
+- 🔔 **Fixed Notifications in .accessory Mode**
+  - Smart notification routing based on activation policy
+  - CustomNotificationManager for menu bar-only mode
+  - UNUserNotification for regular mode (Dock visible)
+  - Guaranteed visual feedback on all captures
+
+**Removed**
+- 🗑️ **Code Cleanup**
+  - Removed MenuBarPopoverView (unused dead code)
+  - Removed Process-based screencapture dependency
+  - Removed unused notification observer logic
+  - Cleaner, more maintainable codebase
+
+**Technical**
+- `SelectionWindow` delegate pattern for capture coordination
+- Conditional notification routing via `NSApp.activationPolicy()`
+- ScreenCaptureKit `SCContentFilter` and `SCStreamConfiguration`
+- `performCapture(rect:)` unified capture method
+
 ### v1.3 - Onboarding Polish (2025-01-14)
 
 **Improved**
@@ -278,8 +325,8 @@ MIT License - See [LICENSE](LICENSE)
 
 ---
 
-**Current Version** : 1.3
-**Build** : 5
+**Current Version** : 1.4
+**Build** : 6
 **Compatibility** : macOS 13.0+ (Ventura, Sonoma, Sequoia)
 **Author** : Eric COLOGNI
 **License** : MIT
