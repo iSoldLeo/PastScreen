@@ -126,7 +126,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 👤 Author
 
-**Eric Cologni** ([@augiefra](https://github.com/augiefra))
+([@augiefra](https://github.com/augiefra))
 
 ---
 
