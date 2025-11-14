@@ -525,6 +525,8 @@ func applicationWillTerminate(_ notification: Notification) {
             enforcingDockPreference = true
             settings.showInDock = true
             enforcingDockPreference = false
+            NSApp.setActivationPolicy(.regular)
+            print("⚠️ [DOCK] Icône Dock réactivée automatiquement pour permettre les notifications Apple")
         }
     }
 }

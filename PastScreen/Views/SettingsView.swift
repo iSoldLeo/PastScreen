@@ -40,7 +40,8 @@ struct GeneralSettingsTab: View {
         Form {
             Section {
                 Toggle("Afficher l'icône dans le Dock", isOn: $settings.showInDock)
-                    .help("Affiche l'icône de l'application dans le Dock. Décochez pour ne garder que l'icône de la barre de menus")
+                    .disabled(true)
+                    .help("Affiche l'icône de l'application dans le Dock. Requis pour les notifications Apple.")
                 Text("Les notifications Apple nécessitent l'icône Dock pour fonctionner.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

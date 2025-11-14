@@ -74,7 +74,12 @@ class AppSettings: ObservableObject {
         self.imageFormat = UserDefaults.standard.string(forKey: "imageFormat") ?? "png"
         self.playSoundOnCapture = UserDefaults.standard.object(forKey: "playSoundOnCapture") as? Bool ?? true
         self.globalHotkeyEnabled = UserDefaults.standard.object(forKey: "globalHotkeyEnabled") as? Bool ?? true
-        self.showInDock = UserDefaults.standard.object(forKey: "showInDock") as? Bool ?? true  // Default: show in Dock
+        var resolvedShowInDock = UserDefaults.standard.object(forKey: "showInDock") as? Bool ?? true
+        if !resolvedShowInDock {
+            resolvedShowInDock = true
+            UserDefaults.standard.set(true, forKey: "showInDock")
+        }
+        self.showInDock = resolvedShowInDock
         self.autoCheckUpdates = UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true  // Default: auto-check enabled
 
         ensureFolderExists()
