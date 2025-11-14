@@ -41,6 +41,10 @@ struct GeneralSettingsTab: View {
             Section {
                 Toggle("Afficher l'icône dans le Dock", isOn: $settings.showInDock)
                     .help("Affiche l'icône de l'application dans le Dock. Décochez pour ne garder que l'icône de la barre de menus")
+                Text("Les notifications Apple nécessitent l'icône Dock pour fonctionner.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 20)
 
                 Toggle("Copier dans le presse-papiers", isOn: $settings.copyToClipboard)
                     .help("Copie automatiquement la capture pour pouvoir coller avec ⌘V")

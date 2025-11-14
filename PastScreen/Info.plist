@@ -14,8 +14,6 @@
 	<string>1.4</string>
 	<key>CFBundleVersion</key>
 	<string>7</string>
-	<key>LSUIElement</key>
-	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>PastScreen utilise les événements Apple pour les raccourcis clavier globaux.</string>
 	<key>NSScreenCaptureUsageDescription</key>

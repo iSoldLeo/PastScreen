@@ -206,23 +206,36 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
     // MARK: - Notification Routing
 
-    /// Affiche notification macOS (NSUserNotification pour compatibilité LSUIElement)
+    /// Affiche notification macOS via UNUserNotificationCenter
     private func showSuccessNotification(filePath: String?) {
-        // 1. Notification macOS avec NSUserNotification (deprecated mais fonctionne avec LSUIElement)
-        let notification = NSUserNotification()
-        notification.title = "PastScreen"
-        notification.informativeText = NSLocalizedString("notification.screenshot_saved", comment: "")
-        notification.soundName = NSUserNotificationDefaultSoundName
+        print("🔔 [NOTIF] showSuccessNotification appelée avec filePath: \(filePath ?? "nil")")
 
-        // Ajouter le chemin du fichier pour pouvoir l'ouvrir au clic
+        let content = UNMutableNotificationContent()
+        content.title = "PastScreen"
+        content.body = NSLocalizedString("notification.screenshot_saved", comment: "")
+        content.sound = .default
+
         if let filePath = filePath {
-            notification.userInfo = ["filePath": filePath]
+            content.userInfo = ["filePath": filePath]
+            print("🔔 [NOTIF] UserInfo configuré avec filePath")
         }
 
-        NSUserNotificationCenter.default.deliver(notification)
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil
+        )
 
-        // 2. "Saved" dans la menu bar pendant 3 secondes
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ [NOTIF] Erreur UNUserNotification: \(error)")
+            } else {
+                print("✅ [NOTIF] UNUserNotification envoyée")
+            }
+        }
+
         DynamicIslandManager.shared.show(message: "Saved", duration: 3.0)
+        print("🔔 [NOTIF] DynamicIsland activé")
     }
 
     private func performCapture(rect: CGRect) {
