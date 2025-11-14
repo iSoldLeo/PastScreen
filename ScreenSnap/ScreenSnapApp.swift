@@ -154,33 +154,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     func createMenu() -> NSMenu {
         let menu = NSMenu()
 
-        let screenshotItem = NSMenuItem(title: "📸 Capturer une zone", action: #selector(takeScreenshot), keyEquivalent: "")
+        let screenshotItem = NSMenuItem(title: NSLocalizedString("menu.capture_area", comment: ""), action: #selector(takeScreenshot), keyEquivalent: "")
         screenshotItem.target = self
         screenshotItem.keyEquivalent = "s"
         screenshotItem.keyEquivalentModifierMask = [.option, .command]
         menu.addItem(screenshotItem)
 
-        let fullScreenItem = NSMenuItem(title: "🖥️ Capturer l'écran complet", action: #selector(captureFullScreen), keyEquivalent: "")
+        let fullScreenItem = NSMenuItem(title: NSLocalizedString("menu.capture_fullscreen", comment: ""), action: #selector(captureFullScreen), keyEquivalent: "")
         fullScreenItem.target = self
         menu.addItem(fullScreenItem)
 
         menu.addItem(NSMenuItem.separator())
 
         // "Reveal last screenshot" menu item - enabled only if there's a recent capture
-        let revealItem = NSMenuItem(title: "📁 Voir la dernière capture", action: #selector(revealLastScreenshot), keyEquivalent: "")
+        let revealItem = NSMenuItem(title: NSLocalizedString("menu.show_last", comment: ""), action: #selector(revealLastScreenshot), keyEquivalent: "")
         revealItem.target = self
         revealItem.isEnabled = (lastScreenshotPath != nil)
         menu.addItem(revealItem)
 
         menu.addItem(NSMenuItem.separator())
 
-        let prefsItem = NSMenuItem(title: "⚙️ Préférences...", action: #selector(openPreferences), keyEquivalent: ",")
+        let prefsItem = NSMenuItem(title: NSLocalizedString("menu.preferences", comment: ""), action: #selector(openPreferences), keyEquivalent: ",")
         prefsItem.target = self
         menu.addItem(prefsItem)
 
         menu.addItem(NSMenuItem.separator())
 
-        let quitItem = NSMenuItem(title: "Quitter", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: NSLocalizedString("menu.quit", comment: ""), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -223,8 +223,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             lastScreenshotPath = nil
             // Show alert
             let alert = NSAlert()
-            alert.messageText = "Fichier introuvable"
-            alert.informativeText = "La capture n'existe plus sur le disque."
+            alert.messageText = NSLocalizedString("error.file_not_found.title", comment: "")
+            alert.informativeText = NSLocalizedString("error.file_not_found.message", comment: "")
             alert.alertStyle = .warning
             alert.runModal()
             return
@@ -254,8 +254,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             backing: .buffered,
             defer: false
         )
-        
-        window.title = "Préférences ScreenSnap"
+
+        window.title = NSLocalizedString("window.preferences", comment: "")
         window.contentViewController = hostingController
         window.center()
         window.setFrameAutosaveName("PreferencesWindow")

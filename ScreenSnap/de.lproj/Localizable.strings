@@ -6,6 +6,9 @@
 "menu.preferences" = "Einstellungen...";
 "menu.quit" = "ScreenSnap beenden";
 
+/* Window Titles */
+"window.preferences" = "ScreenSnap-Einstellungen";
+
 /* Settings - Tabs */
 "settings.tab.general" = "Allgemein";
 "settings.tab.capture" = "Aufnahme";

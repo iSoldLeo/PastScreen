@@ -173,39 +173,6 @@ ScreenSnap/
 - **NSPasteboard** : Clipboard management
 - **UserDefaults** : Settings persistence
 
-### Build
-
-```bash
-# Debug
-xcodebuild -scheme ScreenSnap -configuration Debug build
-
-# Release
-xcodebuild -scheme ScreenSnap -configuration Release build
-```
-
-### Create DMG
-
-```bash
-# Install create-dmg
-brew install create-dmg
-
-# Build Release
-xcodebuild -scheme ScreenSnap -configuration Release build
-
-# Copy app
-cp -R ~/Library/Developer/Xcode/DerivedData/.../ScreenSnap.app ~/Desktop/
-
-# Create DMG
-create-dmg \
-  --volname "ScreenSnap" \
-  --background "dmg-background.png" \
-  --window-size 600 400 \
-  --icon-size 100 \
-  --app-drop-link 425 190 \
-  "ScreenSnap-1.1.dmg" \
-  "~/Desktop/ScreenSnap.app"
-```
-
 ## 📝 Required Permissions
 
 ### Screen Recording
@@ -249,23 +216,6 @@ Solution: Auto-cleanup on reboot → Always clean Desktop
 Problem: Complex interface with 20 options
 Solution: 3 clicks max to configure, instant workflow
 ```
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1. **Fork** the project
-2. **Create** a branch (`git checkout -b feature/improvement`)
-3. **Commit** (`git commit -m 'feat: Add feature'`)
-4. **Push** (`git push origin feature/improvement`)
-5. **Open** a Pull Request
-
-### Guidelines
-
-- Clean Swift code (SwiftLint)
-- Tests for new features
-- Documentation in English
-- Conventional commit messages (feat/fix/docs/refactor)
 
 ## 📄 License
 

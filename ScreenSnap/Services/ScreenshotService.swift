@@ -121,7 +121,7 @@ class ScreenshotService: NSObject {
             print("✅ [SERVICE] screencapture lancé - sélectionnez une zone")
         } catch {
             print("❌ [SERVICE] Erreur lancement screencapture: \(error)")
-            showErrorAlert("Impossible de lancer la capture d'écran")
+            showErrorAlert(NSLocalizedString("error.unable_to_launch", comment: ""))
         }
     }
 
@@ -155,7 +155,7 @@ class ScreenshotService: NSObject {
             print("✅ [SERVICE] screencapture lancé pour écran complet")
         } catch {
             print("❌ [SERVICE] Erreur lancement screencapture: \(error)")
-            showErrorAlert("Impossible de lancer la capture d'écran")
+            showErrorAlert(NSLocalizedString("error.unable_to_launch", comment: ""))
         }
     }
 
@@ -279,7 +279,7 @@ class ScreenshotService: NSObject {
     
     private func showErrorAlert(_ message: String) {
         let alert = NSAlert()
-        alert.messageText = "Erreur de capture"
+        alert.messageText = NSLocalizedString("error.capture_error", comment: "")
         alert.informativeText = message
         alert.alertStyle = .warning
         alert.runModal()
@@ -318,7 +318,7 @@ class ScreenshotService: NSObject {
     private func showSuccessNotification() {
         let notification = UNMutableNotificationContent()
         notification.title = "ScreenSnap"
-        notification.body = "Capture d'écran réussie !"
+        notification.body = NSLocalizedString("notification.screenshot_saved", comment: "")
         notification.sound = .default
 
         let request = UNNotificationRequest(
