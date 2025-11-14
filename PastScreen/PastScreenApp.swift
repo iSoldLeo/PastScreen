@@ -29,12 +29,14 @@ struct PastScreenApp: App {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     var statusItem: NSStatusItem?
     var statusMenu: NSMenu?  // Référence persistante au menu
     var screenshotService: ScreenshotService?
     var preferencesWindow: NSWindow?
     var preferencesWindowDelegate: PreferencesWindowDelegate?  // Strong reference
+    private var enforcingDockPreference = false
+    private var hasShownDockWarning = false
 
     // Services
     var permissionManager = PermissionManager.shared
@@ -60,7 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         // }
 
         // Setup notification center delegate first
-        NSUserNotificationCenter.default.delegate = self
+        UNUserNotificationCenter.current().delegate = self
 
         // IMPORTANT: Don't check permissions at startup to avoid system pop-ups
         // Permissions will be requested through the onboarding flow
@@ -101,8 +103,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         // Setup menu
         setupMenu()
 
-        // NSUserNotification n'a pas besoin de demande de permission explicite
-        // (contrairement à UNUserNotificationCenter)
+        // Request permission for system notifications
+        requestNotificationPermission()
+
+        // TEST: Envoyer une notification de test au démarrage pour debug
+        testNotification()
 
         // Configurer le raccourci clavier global Option + Cmd + S
         setupGlobalHotkey()
@@ -321,38 +326,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         NSApplication.shared.terminate(nil)
     }
     
-    // MARK: - NSUserNotificationCenterDelegate (pour compatibilité LSUIElement)
+    // MARK: - UNUserNotificationCenterDelegate
 
-    // Forcer l'affichage des notifications même quand l'app est active
-    func userNotificationCenter(_ center: NSUserNotificationCenter, shouldPresent notification: NSUserNotification) -> Bool {
-        print("🔔 [DELEGATE] shouldPresent appelé - notification à afficher")
-        print("🔔 [DELEGATE] Titre: \(notification.title ?? "N/A")")
-        print("🔔 [DELEGATE] Body: \(notification.informativeText ?? "N/A")")
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        print("🔔 [DELEGATE] willPresent appelé - notification à afficher")
+        print("🔔 [DELEGATE] Titre: \(notification.request.content.title)")
+        print("🔔 [DELEGATE] Body: \(notification.request.content.body)")
 
-        // Toujours afficher la notification même si l'app est au premier plan
-        return true
-    }
-
-    // Gérer le clic sur la notification
-    func userNotificationCenter(_ center: NSUserNotificationCenter, didActivate notification: NSUserNotification) {
-        print("🖱️ [DELEGATE] Notification activée")
-
-        // Vérifier si c'est un clic sur le contenu
-        if notification.activationType == .contentsClicked {
-            // Récupérer le chemin du fichier depuis userInfo
-            if let filePath = notification.userInfo?["filePath"] as? String {
-                print("🖱️ Clic sur notification - ouverture du fichier: \(filePath)")
-
-                // Ouvrir le Finder et sélectionner le fichier
-                NSWorkspace.shared.selectFile(filePath, inFileViewerRootedAtPath: "")
-            }
+        if #available(macOS 12.0, *) {
+            completionHandler([.banner, .list, .sound])
+        } else {
+            completionHandler([.banner])
         }
-
-        // Retirer la notification après clic
-        center.removeDeliveredNotification(notification)
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        if let filePath = response.notification.request.content.userInfo["filePath"] as? String {
+            print("🖱️ [DELEGATE] Clic sur notification - ouverture du fichier: \(filePath)")
+            NSWorkspace.shared.selectFile(filePath, inFileViewerRootedAtPath: "")
+        }
+        completionHandler()
+    }
+
+func applicationWillTerminate(_ notification: Notification) {
         // Nettoyage final
         settingsObserver?.cancel()
         removeGlobalHotkey()
@@ -361,9 +357,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         }
     }
 
-    // Note: requestNotificationPermission n'est plus nécessaire avec NSUserNotification
-    // NSUserNotification (deprecated) ne nécessite pas de demande de permission explicite
-    // contrairement à UNUserNotificationCenter qui nécessite requestAuthorization()
+    func requestNotificationPermission() {
+        print("🔔 [APP] Requesting notification permission...")
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("❌ [APP] Notification permission error: \(error)")
+            }
+            print(granted ? "✅ [APP] Notification permission granted" : "⚠️ [APP] Notification permission denied")
+        }
+    }
+
+    func testNotification() {
+        print("🧪 [TEST] Envoi d'une notification de test au démarrage...")
+
+        let content = UNMutableNotificationContent()
+        content.title = "PastScreen - Test"
+        content.body = "L'app a démarré avec succès"
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+
+        UNUserNotificationCenter.current().add(request)
+
+        print("🧪 [TEST] Notification de test envoyée")
+        print("🧪 [TEST] Delegate configuré: \(UNUserNotificationCenter.current().delegate != nil)")
+    }
 
     func requestAllPermissions() {
         print("🔐 [APP] Requesting all necessary permissions...")
@@ -487,13 +505,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         let showInDock = settings.showInDock
 
         if showInDock {
-            // Mode normal : icône dans le Dock + menu bar
             NSApp.setActivationPolicy(.regular)
+            hasShownDockWarning = false
             print("✅ [DOCK] Mode normal activé (icône Dock + menu bar)")
         } else {
-            // Mode accessory : seulement menu bar (pas de Dock)
-            NSApp.setActivationPolicy(.accessory)
-            print("✅ [DOCK] Mode menu bar uniquement activé (pas de Dock)")
+            if !hasShownDockWarning {
+                hasShownDockWarning = true
+                DispatchQueue.main.async {
+                    let alert = NSAlert()
+                    alert.messageText = "Notifications Apple indisponibles sans icône Dock"
+                    alert.informativeText = "Les notifications système et les sons natifs nécessitent que PastScreen apparaisse dans le Dock. L'option sera réactivée automatiquement."
+                    alert.alertStyle = .warning
+                    alert.addButton(withTitle: "OK")
+                    alert.runModal()
+                }
+            }
+
+            guard !enforcingDockPreference else { return }
+            enforcingDockPreference = true
+            settings.showInDock = true
+            enforcingDockPreference = false
         }
     }
 }
