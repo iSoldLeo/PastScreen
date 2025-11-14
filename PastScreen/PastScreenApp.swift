@@ -101,8 +101,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Setup menu
         setupMenu()
 
-        // Don't request permissions at startup - will be handled by onboarding
-        // requestAllPermissions()
+        // Request notification permissions at startup
+        requestNotificationPermission()
         
         // Configurer le raccourci clavier global Option + Cmd + S
         setupGlobalHotkey()
@@ -355,6 +355,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         removeGlobalHotkey()
         if let statusItem = statusItem {
             NSStatusBar.system.removeStatusItem(statusItem)
+        }
+    }
+
+    func requestNotificationPermission() {
+        print("🔔 [APP] Requesting notification permission...")
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("❌ [APP] Notification permission error: \(error)")
+            }
+            print(granted ? "✅ [APP] Notification permission granted" : "⚠️ [APP] Notification permission denied")
         }
     }
 

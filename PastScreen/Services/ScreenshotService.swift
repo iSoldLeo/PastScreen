@@ -206,15 +206,17 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     // MARK: - Notification Routing
 
     /// Détecte si l'app est en mode .accessory (menu bar only)
-    private func shouldUseCustomNotifications() -> Bool {
-        return NSApp.activationPolicy() == .accessory
-    }
-
-    private func showSuccessNotification() {
+    private func showSuccessNotification(filePath: String?) {
+        // 1. Notification macOS classique
         let notification = UNMutableNotificationContent()
         notification.title = "PastScreen"
         notification.body = NSLocalizedString("notification.screenshot_saved", comment: "")
         notification.sound = .default
+
+        // Ajouter le chemin du fichier pour pouvoir l'ouvrir au clic
+        if let filePath = filePath {
+            notification.userInfo = ["filePath": filePath]
+        }
 
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
@@ -223,6 +225,9 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         )
 
         UNUserNotificationCenter.current().add(request)
+
+        // 2. "Saved" dans la menu bar pendant 3 secondes
+        DynamicIslandManager.shared.show(message: "Saved", duration: 3.0)
     }
 
     private func performCapture(rect: CGRect) {
@@ -282,13 +287,14 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         }
 
         // Save to file if enabled
+        var filePath: String? = nil
         if AppSettings.shared.saveToFile {
             print("💾 [CAPTURE] Sauvegarde vers fichier...")
-            self.saveToFile(image: image)
+            filePath = self.saveToFileAndGetPath(image: image)
         }
 
         // Show notification and visual feedback
-        self.showModernNotification()
+        self.showSuccessNotification(filePath: filePath)
     }
 
     private func captureScreenRegion(rect: CGRect) async throws -> CGImage {
@@ -521,36 +527,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         try? data.write(to: URL(fileURLWithPath: savePath))
     }
 
-    private func showModernNotification() {
-        if shouldUseCustomNotifications() {
-            // Use CustomNotificationManager for .accessory mode (menu bar only)
-            CustomNotificationManager.shared.show(
-                title: "📸 PastScreen",
-                message: "Capture d'écran enregistrée",
-                filePath: nil
-            )
-            print("✅ [NOTIF] CustomNotificationManager shown (.accessory mode)")
-        } else {
-            // Use UNUserNotification for .regular mode (Dock visible)
-            let content = UNMutableNotificationContent()
-            content.title = "📸 PastScreen"
-            content.body = "Capture d'écran enregistrée"
-            content.sound = nil
-            content.categoryIdentifier = "SCREENSHOT_CAPTURE"
-
-            let request = UNNotificationRequest(
-                identifier: UUID().uuidString,
-                content: content,
-                trigger: nil
-            )
-
-            UNUserNotificationCenter.current().add(request)
-            print("✅ [NOTIF] UNUserNotification sent (.regular mode)")
-        }
-
-        // Visual feedback via notification only (flash effect removed - not essential)
-    }
-    
     private func showErrorNotification(error: Error) {
         print("🚨 Error: \(error.localizedDescription)")
 
