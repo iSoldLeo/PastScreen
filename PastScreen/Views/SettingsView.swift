@@ -40,15 +40,7 @@ struct GeneralSettingsTab: View {
         Form {
             Section {
                 Toggle("Afficher l'icône dans le Dock", isOn: $settings.showInDock)
-                    .disabled(true)
-                    .help("Affiche l'icône de l'application dans le Dock. Requis pour les notifications Apple.")
-                Text("Les notifications Apple nécessitent l'icône Dock pour fonctionner.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 20)
-
-                Toggle("Copier dans le presse-papiers", isOn: $settings.copyToClipboard)
-                    .help("Copie automatiquement la capture pour pouvoir coller avec ⌘V")
+                    .help("Affiche l'icône de l'application dans le Dock. Désactivez pour passer en mode barre de menus uniquement.")
 
                 Toggle("Jouer un son lors de la capture", isOn: $settings.playSoundOnCapture)
                     .help("Feedback audio lors de chaque capture")

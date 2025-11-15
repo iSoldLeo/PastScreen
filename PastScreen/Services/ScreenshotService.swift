@@ -136,36 +136,47 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
     // MARK: - Notification Routing
 
-    /// Affiche notification macOS via UNUserNotificationCenter
+    /// Affiche notification macOS en fonction du mode Dock
     private func showSuccessNotification(filePath: String?) {
         print("🔔 [NOTIF] showSuccessNotification appelée avec filePath: \(filePath ?? "nil")")
 
-        let content = UNMutableNotificationContent()
-        content.title = "PastScreen"
-        content.body = NSLocalizedString("notification.screenshot_saved", comment: "")
-        content.sound = .default
+        if AppSettings.shared.showInDock {
+            let content = UNMutableNotificationContent()
+            content.title = "PastScreen"
+            content.body = NSLocalizedString("notification.screenshot_saved", comment: "")
+            content.sound = .default
 
-        if let filePath = filePath {
-            content.userInfo = ["filePath": filePath]
-            print("🔔 [NOTIF] UserInfo configuré avec filePath")
-        }
-
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
-        )
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("❌ [NOTIF] Erreur UNUserNotification: \(error)")
-            } else {
-                print("✅ [NOTIF] UNUserNotification envoyée")
+            if let filePath = filePath {
+                content.userInfo = ["filePath": filePath]
+                print("🔔 [NOTIF] UserInfo configuré avec filePath")
             }
+
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ [NOTIF] Erreur UNUserNotification: \(error)")
+                } else {
+                    print("✅ [NOTIF] UNUserNotification envoyée")
+                }
+            }
+        } else {
+            let notification = NSUserNotification()
+            notification.title = "PastScreen"
+            notification.informativeText = NSLocalizedString("notification.screenshot_saved", comment: "")
+            notification.soundName = NSUserNotificationDefaultSoundName
+            notification.hasActionButton = false
+
+            if let filePath = filePath {
+                notification.userInfo = ["filePath": filePath]
+                print("🔔 [NOTIF] UserInfo configuré avec filePath (legacy)")
+            }
+
+            NSUserNotificationCenter.default.deliver(notification)
+            print("✅ [NOTIF] NSUserNotification envoyée")
         }
 
         DynamicIslandManager.shared.show(message: "Saved", duration: 3.0)
-        print("🔔 [NOTIF] DynamicIsland activé")
     }
 
     private func performCapture(rect: CGRect) {
@@ -218,11 +229,8 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             }
         }
 
-        // Copy to clipboard if enabled
-        if AppSettings.shared.copyToClipboard {
-            print("📋 [CAPTURE] Copie vers le presse-papier...")
-            self.copyToClipboard(image: image)
-        }
+        print("📋 [CAPTURE] Copie vers le presse-papier...")
+        self.copyToClipboard(image: image)
 
         // Save to file if enabled
         var filePath: String? = nil

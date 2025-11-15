@@ -29,14 +29,12 @@ struct PastScreenApp: App {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, NSUserNotificationCenterDelegate {
     var statusItem: NSStatusItem?
     var statusMenu: NSMenu?  // Référence persistante au menu
     var screenshotService: ScreenshotService?
     var preferencesWindow: NSWindow?
     var preferencesWindowDelegate: PreferencesWindowDelegate?  // Strong reference
-    private var enforcingDockPreference = false
-    private var hasShownDockWarning = false
     private var hasPromptedAccessibility = false
     private var hasPromptedScreenRecording = false
 
@@ -63,8 +61,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         //     return
         // }
 
-        // Setup notification center delegate first
+        // Setup notification center delegates
         UNUserNotificationCenter.current().delegate = self
+        NSUserNotificationCenter.default.delegate = self
 
         // IMPORTANT: Don't check permissions at startup to avoid system pop-ups
         // Permissions will be requested through the onboarding flow
@@ -105,8 +104,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Setup menu
         setupMenu()
 
-        // Request permission for system notifications
-        requestNotificationPermission()
+        if settings.showInDock {
+            requestNotificationPermission()
+        }
 
         #if DEBUG
         testNotification()
@@ -346,8 +346,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         completionHandler()
     }
 
-func applicationWillTerminate(_ notification: Notification) {
-        // Nettoyage final
+    // MARK: - NSUserNotificationCenterDelegate (pour mode menu bar only)
+
+    func userNotificationCenter(_ center: NSUserNotificationCenter, shouldPresent notification: NSUserNotification) -> Bool {
+        return true
+    }
+
+    func userNotificationCenter(_ center: NSUserNotificationCenter, didActivate notification: NSUserNotification) {
+        if let filePath = notification.userInfo?["filePath"] as? String {
+            print("🖱️ [DELEGATE] Legacy notification click - ouverture du fichier: \(filePath)")
+            NSWorkspace.shared.selectFile(filePath, inFileViewerRootedAtPath: "")
+        }
+        center.removeDeliveredNotification(notification)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
         settingsObserver?.cancel()
         removeGlobalHotkey()
         if let statusItem = statusItem {
@@ -356,6 +369,7 @@ func applicationWillTerminate(_ notification: Notification) {
     }
 
     func requestNotificationPermission() {
+        guard settings.showInDock else { return }
         print("🔔 [APP] Requesting notification permission...")
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
@@ -369,22 +383,27 @@ func applicationWillTerminate(_ notification: Notification) {
     func testNotification() {
         print("🧪 [TEST] Envoi d'une notification de test au démarrage...")
 
-        let content = UNMutableNotificationContent()
-        content.title = "PastScreen - Test"
-        content.body = "L'app a démarré avec succès"
-        content.sound = .default
-
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-
-        UNUserNotificationCenter.current().add(request)
+        if settings.showInDock {
+            let content = UNMutableNotificationContent()
+            content.title = "PastScreen - Test"
+            content.body = "L'app a démarré avec succès"
+            content.sound = .default
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            UNUserNotificationCenter.current().add(request)
+        } else {
+            let notification = NSUserNotification()
+            notification.title = "PastScreen - Test"
+            notification.informativeText = "L'app a démarré avec succès"
+            notification.soundName = NSUserNotificationDefaultSoundName
+            NSUserNotificationCenter.default.deliver(notification)
+        }
 
         print("🧪 [TEST] Notification de test envoyée")
-        print("🧪 [TEST] Delegate configuré: \(UNUserNotificationCenter.current().delegate != nil)")
     }
 #endif
 
     private func requestCriticalPermissionsIfNeeded() {
-        if permissionManager.notificationStatus == .notDetermined {
+        if settings.showInDock && permissionManager.notificationStatus == .notDetermined {
             requestNotificationPermission()
         }
 
@@ -565,27 +584,11 @@ func applicationWillTerminate(_ notification: Notification) {
 
         if showInDock {
             NSApp.setActivationPolicy(.regular)
-            hasShownDockWarning = false
             print("✅ [DOCK] Mode normal activé (icône Dock + menu bar)")
+            requestNotificationPermission()
         } else {
-            if !hasShownDockWarning {
-                hasShownDockWarning = true
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "Notifications Apple indisponibles sans icône Dock"
-                    alert.informativeText = "Les notifications système et les sons natifs nécessitent que PastScreen apparaisse dans le Dock. L'option sera réactivée automatiquement."
-                    alert.alertStyle = .warning
-                    alert.addButton(withTitle: "OK")
-                    alert.runModal()
-                }
-            }
-
-            guard !enforcingDockPreference else { return }
-            enforcingDockPreference = true
-            settings.showInDock = true
-            enforcingDockPreference = false
-            NSApp.setActivationPolicy(.regular)
-            print("⚠️ [DOCK] Icône Dock réactivée automatiquement pour permettre les notifications Apple")
+            NSApp.setActivationPolicy(.accessory)
+            print("✅ [DOCK] Mode menu bar uniquement activé (pas de Dock) - notifications fallback")
         }
     }
 }

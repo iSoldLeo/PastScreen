@@ -12,12 +12,6 @@ import Combine
 class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
-    @Published var copyToClipboard: Bool {
-        didSet {
-            UserDefaults.standard.set(copyToClipboard, forKey: "copyToClipboard")
-        }
-    }
-
     @Published var saveToFile: Bool {
         didSet {
             UserDefaults.standard.set(saveToFile, forKey: "saveToFile")
@@ -65,7 +59,6 @@ class AppSettings: ObservableObject {
 
     private init() {
         // Load saved values or use defaults
-        self.copyToClipboard = UserDefaults.standard.object(forKey: "copyToClipboard") as? Bool ?? true
         self.saveToFile = UserDefaults.standard.object(forKey: "saveToFile") as? Bool ?? true  // Changed default to true
 
         // Default to temp directory (cleared on reboot) for "jetable" workflow
@@ -74,12 +67,7 @@ class AppSettings: ObservableObject {
         self.imageFormat = UserDefaults.standard.string(forKey: "imageFormat") ?? "png"
         self.playSoundOnCapture = UserDefaults.standard.object(forKey: "playSoundOnCapture") as? Bool ?? true
         self.globalHotkeyEnabled = UserDefaults.standard.object(forKey: "globalHotkeyEnabled") as? Bool ?? true
-        var resolvedShowInDock = UserDefaults.standard.object(forKey: "showInDock") as? Bool ?? true
-        if !resolvedShowInDock {
-            resolvedShowInDock = true
-            UserDefaults.standard.set(true, forKey: "showInDock")
-        }
-        self.showInDock = resolvedShowInDock
+        self.showInDock = UserDefaults.standard.object(forKey: "showInDock") as? Bool ?? true
         self.autoCheckUpdates = UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true  // Default: auto-check enabled
 
         ensureFolderExists()
