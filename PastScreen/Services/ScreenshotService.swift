@@ -157,7 +157,14 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             trigger: nil
         )
 
-        NotificationDeliveryCoordinator.shared.deliver(request: request, needsTemporaryDock: !AppSettings.shared.showInDock)
+        // Appel direct sans activation temporaire du Dock (fonctionne en mode .accessory et .regular)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ [NOTIF] Erreur UNUserNotification: \(error)")
+            } else {
+                print("✅ [NOTIF] UNUserNotification envoyée")
+            }
+        }
 
         DynamicIslandManager.shared.show(message: "Saved", duration: 3.0)
     }
@@ -476,78 +483,5 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-    }
-}
-
-// MARK: - Notification Delivery Helper
-
-private final class NotificationDeliveryCoordinator {
-    static let shared = NotificationDeliveryCoordinator()
-
-    private var accessoryNotificationCount = 0
-    private var isTemporarilyShowingDock = false
-
-    func deliver(request: UNNotificationRequest, needsTemporaryDock: Bool) {
-        if !needsTemporaryDock {
-            print("🔔 [NOTIF] Dock déjà visible, envoi direct")
-            UNUserNotificationCenter.current().add(request) { error in
-                self.logResult(error)
-            }
-            return
-        }
-
-        print("🔔 [NOTIF] needsTemporaryDock = true, activation temporaire")
-
-        DispatchQueue.main.async {
-            self.accessoryNotificationCount += 1
-            print("🔔 [NOTIF] Counter: \(self.accessoryNotificationCount)")
-
-            if !self.isTemporarilyShowingDock {
-                self.isTemporarilyShowingDock = true
-                NSApp.setActivationPolicy(.regular)
-                print("✅ [NOTIF] Dock activé temporairement (.regular)")
-            } else {
-                print("🔔 [NOTIF] Dock déjà temporairement activé")
-            }
-
-            UNUserNotificationCenter.current().add(request) { error in
-                self.logResult(error)
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    self.accessoryNotificationCount -= 1
-                    print("🔔 [NOTIF] Counter après délai: \(self.accessoryNotificationCount)")
-
-                    if self.accessoryNotificationCount <= 0 {
-                        self.accessoryNotificationCount = 0
-                        self.isTemporarilyShowingDock = false
-
-                        let showInDock = AppSettings.shared.showInDock
-                        print("🔔 [NOTIF] Restauration: showInDock = \(showInDock)")
-
-                        // Restaurer directement la policy selon les préférences
-                        if showInDock {
-                            print("🔧 [NOTIF] Restauration vers .regular (Dock visible)")
-                            NSApp.setActivationPolicy(.regular)
-                        } else {
-                            print("🔧 [NOTIF] Restauration vers .accessory (menu bar uniquement)")
-                            NSApp.setActivationPolicy(.accessory)
-                        }
-
-                        let newPolicy = NSApp.activationPolicy()
-                        print("✅ [NOTIF] Policy restaurée: \(newPolicy.rawValue) (0=regular, 1=accessory)")
-                    } else {
-                        print("🔔 [NOTIF] Counter > 0, attente d'autres notifications")
-                    }
-                }
-            }
-        }
-    }
-
-    private func logResult(_ error: Error?) {
-        if let error = error {
-            print("❌ [NOTIF] Erreur UNUserNotification: \(error)")
-        } else {
-            print("✅ [NOTIF] UNUserNotification envoyée")
-        }
     }
 }
