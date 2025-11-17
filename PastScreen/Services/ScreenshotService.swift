@@ -77,6 +77,14 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     func captureScreenshot() {
         print("🎬 [SERVICE] Launching SelectionWindow for area capture...")
 
+        // CRITICAL: Force cleanup of any existing selection window before creating new one
+        // (prevents overlay windows from persisting if user takes multiple screenshots rapidly)
+        if let existingWindow = selectionWindow {
+            print("⚠️ [SERVICE] Cleaning up existing SelectionWindow before creating new one")
+            existingWindow.hide()
+            selectionWindow = nil
+        }
+
         // Create and show custom selection window (one per screen for multi-monitor support)
         selectionWindow = SelectionWindow()
         selectionWindow?.selectionDelegate = self
@@ -283,18 +291,26 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             // 4. Créer le filtre de contenu (capture tout l'écran, SAUF les overlays)
             let filter = SCContentFilter(display: mainDisplay, excludingWindows: excludeWindows)
 
-            // 5. Configuration simple et robuste
+            // 5. Determine backing scale factor (Retina = 2.0, non-Retina = 1.0)
+            // Find the NSScreen that contains this rect to get its backing scale factor
+            let containingScreen = NSScreen.screens.first { screen in
+                screen.frame.intersects(rect)
+            }
+            let scaleFactor = containingScreen?.backingScaleFactor ?? 2.0
+            print("🔍 [ScreenCaptureKit] Backing scale factor: \(scaleFactor)x")
+
+            // 6. Configuration avec résolution native (points × scale factor = pixels)
             let config = SCStreamConfiguration()
-            config.width = Int(rect.width)
-            config.height = Int(rect.height)
+            config.width = Int(rect.width * scaleFactor)  // Convert points to pixels
+            config.height = Int(rect.height * scaleFactor)  // Convert points to pixels
             config.sourceRect = rect  // ScreenCaptureKit s'occupe des coordonnées
             config.scalesToFit = false
             config.showsCursor = false
             config.captureResolution = .best
 
-            print("⚙️ [ScreenCaptureKit] Config: \(config.width)x\(config.height), sourceRect: \(config.sourceRect)")
+            print("⚙️ [ScreenCaptureKit] Config: \(config.width)x\(config.height) pixels (\(Int(rect.width))x\(Int(rect.height)) points × \(scaleFactor)), sourceRect: \(config.sourceRect)")
 
-            // 6. Capture avec l'API officielle
+            // 7. Capture avec l'API officielle
             let cgImage = try await SCScreenshotManager.captureImage(
                 contentFilter: filter,
                 configuration: config
