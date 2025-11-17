@@ -20,11 +20,16 @@
 
 ---
 
-## 🆕 Version 1.5 – "Apple-first refinements"
-- ✅ **App Intents + Shortcuts** for Siri and automations.
-- ✅ **TipKit onboarding** in preferences.
-- ✅ **Dockless notification support** (temporary Dock toggle for UN banners).
-- ✅ **Selection overlay polish** with immediate first click and new dimming.
+## 🆕 Version 1.6 – "Apple-first refinements + bug corrections"
+✨ What's New
+Multi-monitor capture fixes – ScreenCaptureKit now receives coordinates relative to the correct display, eliminating shifted/pixelated captures and “invalid parameter” errors.
+Reliable overlay – The Liquid Glass overlay converts selections into global coordinates correctly and cleans up even when cancellations happen quickly.
+Smarter clipboard – Browsers/design tools get the image plus a fallback file path, while editors like Zed/VSCode continue to receive the path-only experience when appropriate.
+Outlook support – Outlook is now treated as a browser, so captures triggered from it paste the full image by default.
+🐛 Bug Fixes
+Fixed a bug where a second instance could launch when running from Xcode.
+Removed inconsistent DPI metadata that made captures look zoomed in Quick Look.
+Cleaned up the release pipeline and included the Sparkle packaging script.
 
 See full changelog in [`appcast.xml`](appcast.xml) or the [GitHub Releases](https://github.com/augiefra/PastScreen/releases).
 
