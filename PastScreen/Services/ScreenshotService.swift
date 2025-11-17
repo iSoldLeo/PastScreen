@@ -273,33 +273,47 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             let content = try await SCShareableContent.current
             print("✅ [ScreenCaptureKit] \(content.displays.count) écran(s) disponible(s)")
 
-            // 2. Trouver l'écran principal
-            guard let mainDisplay = content.displays.first else {
+            // 2. Find NSScreen that contains the selection rect
+            guard let nsScreen = NSScreen.screens.first(where: { $0.frame.intersects(rect) }) else {
                 throw NSError(domain: "ScreenshotService", code: -2, userInfo: [
-                    NSLocalizedDescriptionKey: "Aucun écran disponible"
+                    NSLocalizedDescriptionKey: "Aucun écran trouvé pour la zone sélectionnée"
                 ])
             }
 
-            print("✅ [ScreenCaptureKit] Écran principal ID: \(mainDisplay.displayID)")
+            // 3. Match NSScreen to SCDisplay by displayID
+            let displayID = nsScreen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID ?? 0
+            let targetDisplay: SCDisplay
+            if let matchedDisplay = content.displays.first(where: { $0.displayID == displayID }) {
+                targetDisplay = matchedDisplay
+                print("✅ [ScreenCaptureKit] Matched display ID: \(targetDisplay.displayID)")
+            } else {
+                print("⚠️ [ScreenCaptureKit] Display ID \(displayID) not found, using first display")
+                guard let fallbackDisplay = content.displays.first else {
+                    throw NSError(domain: "ScreenshotService", code: -3, userInfo: [
+                        NSLocalizedDescriptionKey: "Aucun écran disponible"
+                    ])
+                }
+                targetDisplay = fallbackDisplay
+                print("✅ [ScreenCaptureKit] Using fallback display ID: \(targetDisplay.displayID)")
+            }
 
-            // 3. Convert window IDs to SCWindow objects for exclusion
+            print("✅ [ScreenCaptureKit] Capturing from display ID: \(targetDisplay.displayID) for rect: \(rect)")
+
+            // 4. Convert window IDs to SCWindow objects for exclusion
             let excludeWindows = content.windows.filter { window in
                 excludeWindowIDs.contains(CGWindowID(window.windowID))
             }
             print("🚫 [ScreenCaptureKit] Found \(excludeWindows.count) overlay windows to exclude")
 
-            // 4. Créer le filtre de contenu (capture tout l'écran, SAUF les overlays)
-            let filter = SCContentFilter(display: mainDisplay, excludingWindows: excludeWindows)
+            // 5. Créer le filtre de contenu (capture le BON écran, SAUF les overlays)
+            let filter = SCContentFilter(display: targetDisplay, excludingWindows: excludeWindows)
 
-            // 5. Determine backing scale factor (Retina = 2.0, non-Retina = 1.0)
-            // Find the NSScreen that contains this rect to get its backing scale factor
-            let containingScreen = NSScreen.screens.first { screen in
-                screen.frame.intersects(rect)
-            }
-            let scaleFactor = containingScreen?.backingScaleFactor ?? 2.0
+            // 6. Determine backing scale factor (Retina = 2.0, non-Retina = 1.0)
+            // Use the nsScreen we already found
+            let scaleFactor = nsScreen.backingScaleFactor
             print("🔍 [ScreenCaptureKit] Backing scale factor: \(scaleFactor)x")
 
-            // 6. Configuration avec résolution native (points × scale factor = pixels)
+            // 7. Configuration avec résolution native (points × scale factor = pixels)
             let config = SCStreamConfiguration()
             config.width = Int(rect.width * scaleFactor)  // Convert points to pixels
             config.height = Int(rect.height * scaleFactor)  // Convert points to pixels
@@ -310,7 +324,7 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
             print("⚙️ [ScreenCaptureKit] Config: \(config.width)x\(config.height) pixels (\(Int(rect.width))x\(Int(rect.height)) points × \(scaleFactor)), sourceRect: \(config.sourceRect)")
 
-            // 7. Capture avec l'API officielle
+            // 8. Capture avec l'API officielle
             let cgImage = try await SCScreenshotManager.captureImage(
                 contentFilter: filter,
                 configuration: config
