@@ -101,17 +101,27 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     func selectionWindow(_ window: SelectionWindow, didSelectRect rect: CGRect) {
         print("📐 [SELECTION] User selected rect: \(rect)")
 
+        // Get overlay window IDs BEFORE hiding (for ScreenCaptureKit exclusion)
+        let overlayWindowIDs = window.getOverlayWindowIDs()
+        print("🔢 [SELECTION] Got \(overlayWindowIDs.count) overlay window IDs for exclusion")
+
         // Hide all selection windows
         window.hide()
 
-        // Delay cleanup to avoid crash (window might have active references)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.selectionWindow = nil
-            print("✅ [SELECTION] Window cleaned up")
-        }
+        // CRITICAL: Wait for windows to be visually hidden before capturing
+        // ScreenCaptureKit captures everything on screen, including overlays
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self = self else { return }
 
-        // Perform capture with selected rectangle
-        performCapture(rect: rect)
+            // Now perform capture with overlay windows excluded
+            self.performCapture(rect: rect, excludeWindowIDs: overlayWindowIDs)
+
+            // Cleanup window reference
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.selectionWindow = nil
+                print("✅ [SELECTION] Window cleaned up")
+            }
+        }
     }
 
     func selectionWindowDidCancel(_ window: SelectionWindow) {
@@ -162,8 +172,9 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         DynamicIslandManager.shared.show(message: "Saved", duration: 3.0)
     }
 
-    private func performCapture(rect: CGRect) {
+    private func performCapture(rect: CGRect, excludeWindowIDs: [CGWindowID] = []) {
         print("🎯 [CAPTURE] Début de la capture pour la région: \(rect)")
+        print("🚫 [CAPTURE] Excluding \(excludeWindowIDs.count) overlay windows from capture")
 
         // Vérifier que le rectangle est valide
         guard rect.width > 0 && rect.height > 0 else {
@@ -179,7 +190,7 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
             do {
                 // Essayer d'abord avec ScreenCaptureKit (moderne)
-                let cgImage = try await self.captureWithScreenCaptureKit(rect: rect)
+                let cgImage = try await self.captureWithScreenCaptureKit(rect: rect, excludeWindowIDs: excludeWindowIDs)
                 let nsImage = NSImage(cgImage: cgImage, size: rect.size)
 
                 print("✅ [CAPTURE] Capture ScreenCaptureKit réussie - Taille: \(nsImage.size)")
@@ -196,8 +207,8 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     }
 
     // Nouvelle méthode avec ScreenCaptureKit
-    private func captureWithScreenCaptureKit(rect: CGRect) async throws -> CGImage {
-        return try await captureScreenRegion(rect: rect)
+    private func captureWithScreenCaptureKit(rect: CGRect, excludeWindowIDs: [CGWindowID]) async throws -> CGImage {
+        return try await captureScreenRegion(rect: rect, excludeWindowIDs: excludeWindowIDs)
     }
 
     // Gestion commune du succès
@@ -230,8 +241,9 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         self.showSuccessNotification(filePath: filePath)
     }
 
-    private func captureScreenRegion(rect: CGRect) async throws -> CGImage {
+    private func captureScreenRegion(rect: CGRect, excludeWindowIDs: [CGWindowID]) async throws -> CGImage {
         print("🖥️ [ScreenCaptureKit] Capture région: \(rect)")
+        print("🚫 [ScreenCaptureKit] Window IDs to exclude: \(excludeWindowIDs)")
 
         // Vérification de base du rectangle
         guard rect.width > 0 && rect.height > 0 else {
@@ -254,10 +266,16 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
             print("✅ [ScreenCaptureKit] Écran principal ID: \(mainDisplay.displayID)")
 
-            // 3. Créer le filtre de contenu (capture tout l'écran, puis on crop)
-            let filter = SCContentFilter(display: mainDisplay, excludingWindows: [])
+            // 3. Convert window IDs to SCWindow objects for exclusion
+            let excludeWindows = content.windows.filter { window in
+                excludeWindowIDs.contains(CGWindowID(window.windowID))
+            }
+            print("🚫 [ScreenCaptureKit] Found \(excludeWindows.count) overlay windows to exclude")
 
-            // 4. Configuration simple et robuste
+            // 4. Créer le filtre de contenu (capture tout l'écran, SAUF les overlays)
+            let filter = SCContentFilter(display: mainDisplay, excludingWindows: excludeWindows)
+
+            // 5. Configuration simple et robuste
             let config = SCStreamConfiguration()
             config.width = Int(rect.width)
             config.height = Int(rect.height)
@@ -268,7 +286,7 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
             print("⚙️ [ScreenCaptureKit] Config: \(config.width)x\(config.height), sourceRect: \(config.sourceRect)")
 
-            // 5. Capture avec l'API officielle
+            // 6. Capture avec l'API officielle
             let cgImage = try await SCScreenshotManager.captureImage(
                 contentFilter: filter,
                 configuration: config

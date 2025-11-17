@@ -2,7 +2,7 @@
 //  SelectionWindow.swift
 //  PastScreen
 //
-//  Simple selection window with delegate pattern
+//  Multi-screen selection window manager
 //
 
 import Foundation
@@ -14,39 +14,97 @@ protocol SelectionWindowDelegate: AnyObject {
     func selectionWindowDidCancel(_ window: SelectionWindow)
 }
 
+// MARK: - Overlay Window for Multi-Screen Support
+
+class OverlayWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        // Allow ESC to propagate to parent SelectionWindow
+        if event.keyCode == 53 { // ESC
+            // Will be handled by SelectionOverlayView
+            super.keyDown(with: event)
+        } else {
+            super.keyDown(with: event)
+        }
+    }
+}
+
 class SelectionWindow: NSWindow {
     weak var selectionDelegate: SelectionWindowDelegate?
-    private var selectionView: SelectionOverlayView!
+
+    // Multi-screen support: one window per screen
+    private var overlayWindows: [NSWindow] = []
+    private var sharedOverlayView: SelectionOverlayView!
 
     init() {
-        // Créer une fenêtre couvrant tous les écrans
-        let combinedFrame = NSScreen.screens.reduce(NSRect.zero) { $0.union($1.frame) }
+        // Create main window (first screen) for NSWindow inheritance
+        let mainScreen = NSScreen.main ?? NSScreen.screens.first!
 
         super.init(
-            contentRect: combinedFrame,
+            contentRect: mainScreen.frame,
             styleMask: .borderless,
             backing: .buffered,
             defer: false
         )
 
-        self.isOpaque = false
-        self.backgroundColor = .clear
-        self.level = .screenSaver
-        self.ignoresMouseEvents = false
-        self.hasShadow = false
-        self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        setupMultiScreenOverlays()
+    }
 
-        selectionView = SelectionOverlayView(frame: combinedFrame)
-        selectionView.onComplete = { [weak self] rect in
+    private func setupMultiScreenOverlays() {
+        // Calculate combined frame for shared overlay view
+        let combinedFrame = NSScreen.screens.reduce(NSRect.zero) { $0.union($1.frame) }
+
+        // Create shared overlay view that spans all screens
+        sharedOverlayView = SelectionOverlayView(frame: combinedFrame)
+        sharedOverlayView.onComplete = { [weak self] rect in
             guard let self = self else { return }
             self.selectionDelegate?.selectionWindow(self, didSelectRect: rect)
         }
-        selectionView.onCancel = { [weak self] in
+        sharedOverlayView.onCancel = { [weak self] in
             guard let self = self else { return }
             self.selectionDelegate?.selectionWindowDidCancel(self)
         }
 
-        self.contentView = selectionView
+        // Create one window per screen
+        for screen in NSScreen.screens {
+            // Create window WITHOUT screen parameter to avoid auto-repositioning
+            let window = OverlayWindow(
+                contentRect: screen.frame,
+                styleMask: .borderless,
+                backing: .buffered,
+                defer: false
+            )
+
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.level = .screenSaver
+            window.ignoresMouseEvents = false
+            window.hasShadow = false
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
+            // Manually position window to this screen's frame
+            window.setFrame(screen.frame, display: false)
+
+            // Create overlay view for this screen - frame must be relative to window (0,0 origin)
+            let overlayFrame = NSRect(x: 0, y: 0, width: screen.frame.width, height: screen.frame.height)
+            let overlayView = SelectionOverlayView(frame: overlayFrame)
+            overlayView.onComplete = { [weak self] rect in
+                guard let self = self else { return }
+                self.selectionDelegate?.selectionWindow(self, didSelectRect: rect)
+            }
+            overlayView.onCancel = { [weak self] in
+                guard let self = self else { return }
+                self.selectionDelegate?.selectionWindowDidCancel(self)
+            }
+
+            window.contentView = overlayView
+            overlayWindows.append(window)
+
+            print("✅ [MULTI-SCREEN] Created overlay for screen: \(screen.localizedName)")
+            print("   Frame: \(screen.frame), canBecomeKey: \(window.canBecomeKey)")
+        }
     }
 
     override var canBecomeKey: Bool { true }
@@ -64,12 +122,42 @@ class SelectionWindow: NSWindow {
     func show() {
         // S'assurer que PastScreen devient app active pour capter le premier clic
         NSApp.activate(ignoringOtherApps: true)
-        makeKeyAndOrderFront(nil)
-        print("✅ [WINDOW] SelectionWindow activated and shown")
+
+        // Show all overlay windows - use orderFrontRegardless to force display
+        for (index, window) in overlayWindows.enumerated() {
+            // First window becomes key, others just order front
+            if index == 0 {
+                window.makeKeyAndOrderFront(nil)
+                print("✅ [MULTI-SCREEN] Screen \(index) (main) - Making key and ordering front")
+            } else {
+                window.orderFrontRegardless()
+                print("✅ [MULTI-SCREEN] Screen \(index) - Ordering front regardless")
+            }
+            print("   Frame: \(window.frame), Level: \(window.level.rawValue)")
+        }
+
+        print("✅ [MULTI-SCREEN] Showing \(overlayWindows.count) overlay window(s)")
     }
 
     func hide() {
-        orderOut(nil)
+        // Hide all overlay windows immediately
+        for (index, window) in overlayWindows.enumerated() {
+            window.orderOut(nil)
+            window.ignoresMouseEvents = true
+            print("🙈 [MULTI-SCREEN] Screen \(index) - orderOut() called, ignoresMouseEvents: true")
+        }
+        print("✅ [MULTI-SCREEN] Hidden \(overlayWindows.count) overlay window(s)")
+    }
+
+    // Get overlay window IDs for ScreenCaptureKit exclusion
+    func getOverlayWindowIDs() -> [CGWindowID] {
+        let windowIDs = overlayWindows.compactMap { window -> CGWindowID? in
+            let windowNumber = window.windowNumber
+            guard windowNumber > 0 else { return nil }
+            return CGWindowID(windowNumber)
+        }
+        print("🔢 [MULTI-SCREEN] Extracted \(windowIDs.count) overlay window IDs: \(windowIDs)")
+        return windowIDs
     }
 }
 
