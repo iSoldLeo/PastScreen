@@ -9,7 +9,9 @@ import SwiftUI
 import AppKit
 import UserNotifications
 import Combine
+#if !APPSTORE
 import Sparkle
+#endif
 #if canImport(TipKit)
 import TipKit
 #endif
@@ -51,8 +53,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // Services
     var permissionManager = PermissionManager.shared
 
+    #if !APPSTORE
     // Sparkle auto-updater
     private var updaterController: SPUStandardUpdaterController?
+    #endif
 
     // Pour le raccourci clavier global
     var globalEventMonitor: Any?
@@ -168,6 +172,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             OnboardingManager.shared.showIfNeeded()
         }
 
+        #if !APPSTORE
         // Initialize Sparkle auto-updater
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
@@ -175,6 +180,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             userDriverDelegate: nil
         )
         NSLog("✅ [SPARKLE] Auto-updater initialized")
+        #else
+        NSLog("ℹ️ [APP] Running App Store build - Sparkle disabled")
+        #endif
     }
 
     @objc func handleScreenshotCaptured(_ notification: Notification) {
@@ -225,7 +233,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         prefsItem.target = self
         menu.addItem(prefsItem)
 
-        // Check for Updates...
+        #if !APPSTORE
+        // Check for Updates... (only for direct distribution, not App Store)
         let checkUpdatesItem = NSMenuItem(
             title: NSLocalizedString("menu.check_updates", comment: "Check for Updates..."),
             action: #selector(checkForUpdates),
@@ -233,6 +242,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         )
         checkUpdatesItem.target = self
         menu.addItem(checkUpdatesItem)
+        #endif
 
         menu.addItem(NSMenuItem.separator())
 
@@ -322,9 +332,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         window.makeKeyAndOrderFront(nil)
     }
 
+    #if !APPSTORE
     @objc func checkForUpdates() {
         updaterController?.checkForUpdates(nil)
     }
+    #endif
 
     @objc func quit() {
         // Fermer toutes les fenêtres ouvertes

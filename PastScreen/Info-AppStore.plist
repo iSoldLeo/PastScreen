@@ -22,15 +22,5 @@
 	<string>PastScreen nécessite l'accès à la capture d'écran pour prendre des screenshots.</string>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>PastScreen affiche des notifications pour confirmer les captures d'écran.</string>
-	<key>SUAllowsAutomaticUpdates</key>
-	<true/>
-	<key>SUAutomaticallyUpdate</key>
-	<false/>
-	<key>SUEnableAutomaticChecks</key>
-	<true/>
-	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/augiefra/PastScreen/main/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>0kgGfpfzDCMIcKXLqaNbUM+p14CHFGib3GqG3FtCOSk=</string>
 </dict>
 </plist>

@@ -6,11 +6,8 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		16ABDA1A2EC792C000402866 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 16ABDA192EC792C000402866 /* Sparkle */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
+		16BE886B2ECC7803006E3BED /* PastScreen copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PastScreen copy-Info.plist"; path = "/Users/ecologni/Desktop/Clemadel/PastScreen/PastScreen copy-Info.plist"; sourceTree = "<absolute>"; };
 		16C553412EB8AF3F008745D0 /* PastScreen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PastScreen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -22,22 +19,12 @@
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
-/* Begin PBXFrameworksBuildPhase section */
-		16C5533E2EB8AF3F008745D0 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				16ABDA1A2EC792C000402866 /* Sparkle in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
-
 /* Begin PBXGroup section */
 		16C553382EB8AF3F008745D0 = {
 			isa = PBXGroup;
 			children = (
 				16C553432EB8AF3F008745D0 /* PastScreen */,
+				16BE886B2ECC7803006E3BED /* PastScreen copy-Info.plist */,
 				16C553422EB8AF3F008745D0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -57,9 +44,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 16C5534C2EB8AF3F008745D0 /* Build configuration list for PBXNativeTarget "PastScreen" */;
 			buildPhases = (
-				16C5533D2EB8AF3F008745D0 /* Sources */,
-				16C5533E2EB8AF3F008745D0 /* Frameworks */,
-				16C5533F2EB8AF3F008745D0 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -116,26 +100,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXResourcesBuildPhase section */
-		16C5533F2EB8AF3F008745D0 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXSourcesBuildPhase section */
-		16C5533D2EB8AF3F008745D0 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		16C5534A2EB8AF3F008745D0 /* Debug */ = {
@@ -301,7 +265,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.6.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.augiefra.PastScreen;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ecologni.PastScreen;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
@@ -356,7 +320,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.6.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.augiefra.PastScreen;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ecologni.PastScreen;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
