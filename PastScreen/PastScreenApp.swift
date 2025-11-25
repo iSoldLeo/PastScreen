@@ -187,11 +187,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         NSLog("ℹ️ [APP] Running App Store build - Sparkle disabled")
         #endif
 
-        // Auto-cleanup if using Pictures/PastScreen folder
+        #if !APPSTORE
+        // GitHub only: Auto-cleanup if using Pictures/PastScreen folder
         if settings.saveFolderPath.contains("/Pictures/PastScreen") {
             settings.clearSaveFolder()
             NSLog("🧹 [APP] Auto-cleanup on launch for Pictures/PastScreen folder")
         }
+        #endif
     }
 
     @objc func handleScreenshotCaptured(_ notification: Notification) {
@@ -503,7 +505,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         let content = UNMutableNotificationContent()
         content.title = "PastScreen - Test"
-        content.body = "L'app a démarré avec succès"
+        content.body = "App started successfully"
         content.sound = .default
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)

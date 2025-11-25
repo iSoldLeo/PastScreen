@@ -110,12 +110,29 @@ class AppSettings: ObservableObject {
         return saveFolderBookmark != nil
     }
 
+    /// Check if a valid save folder is configured (for App Store: requires user selection)
+    var hasValidSaveFolder: Bool {
+        #if APPSTORE
+        // App Store requires user-selected folder with valid bookmark
+        return !saveFolderPath.isEmpty && hasValidBookmark
+        #else
+        // GitHub version: any non-empty path is valid
+        return !saveFolderPath.isEmpty
+        #endif
+    }
+
     private init() {
         // Load saved values or use defaults
         self.saveToFile = UserDefaults.standard.object(forKey: "saveToFile") as? Bool ?? true  // Changed default to true
 
-        // Default to Pictures/PastScreen (auto-cleaned on app restart)
+        #if APPSTORE
+        // App Store: No default path - user MUST select a folder via NSOpenPanel
+        // This complies with Apple guideline 2.4.5(i) - user-accessible storage
+        let defaultPath = ""  // Empty = forces folder selection
+        #else
+        // GitHub: Default to Pictures/PastScreen (auto-cleaned on app restart)
         let defaultPath = NSHomeDirectory() + "/Pictures/PastScreen/"
+        #endif
         self.saveFolderPath = UserDefaults.standard.string(forKey: "saveFolderPath") ?? defaultPath
 
         self.imageFormat = UserDefaults.standard.string(forKey: "imageFormat") ?? "png"

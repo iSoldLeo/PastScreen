@@ -4,7 +4,7 @@ import AppIntents
 @available(macOS 13.0, *)
 struct CaptureAreaIntent: AppIntent {
     static var title: LocalizedStringResource = "Capture area"
-    static var description = IntentDescription("Capture une zone personnalisée avec PastScreen et copie l'image.")
+    static var description = IntentDescription("Capture a custom area with PastScreen and copy the image.")
     static var openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult {
@@ -16,7 +16,7 @@ struct CaptureAreaIntent: AppIntent {
 @available(macOS 13.0, *)
 struct CaptureFullScreenIntent: AppIntent {
     static var title: LocalizedStringResource = "Capture full screen"
-    static var description = IntentDescription("Capture tout l'écran avec PastScreen et copie le résultat.")
+    static var description = IntentDescription("Capture the full screen with PastScreen and copy the result.")
     static var openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult {

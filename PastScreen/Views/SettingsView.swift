@@ -255,7 +255,17 @@ struct StorageSettingsView: View {
                         Toggle("Save to Disk", isOn: $settings.saveToFile)
                             .onChange(of: settings.saveToFile) { _, newValue in
                                 if newValue {
-                                    // Check for temp path OR default Pictures path without bookmark permission
+                                    #if APPSTORE
+                                    // App Store: ALWAYS require valid bookmark (user-selected folder)
+                                    if !settings.hasValidBookmark {
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            if let newPath = settings.selectFolder() {
+                                                settings.saveFolderPath = newPath
+                                            }
+                                        }
+                                    }
+                                    #else
+                                    // GitHub: Check for temp path OR default Pictures path without bookmark permission
                                     let isTemp = settings.saveFolderPath.contains(NSTemporaryDirectory()) ||
                                                  settings.saveFolderPath.contains("/T/PastScreen") ||
                                                  settings.saveFolderPath.contains("/tmp/")
@@ -269,6 +279,7 @@ struct StorageSettingsView: View {
                                             }
                                         }
                                     }
+                                    #endif
                                 }
                             }
 

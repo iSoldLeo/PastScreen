@@ -206,7 +206,7 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         guard rect.width > 0 && rect.height > 0 else {
             print("❌ [CAPTURE] Rectangle de capture invalide: \(rect)")
             DispatchQueue.main.async { [weak self] in
-                self?.showErrorNotification(error: NSError(domain: "ScreenshotService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Rectangle de sélection invalide"]))
+                self?.showErrorNotification(error: NSError(domain: "ScreenshotService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid selection rectangle"]))
             }
             return
         }
@@ -302,7 +302,7 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             // 2. Find NSScreen that contains the selection rect
             guard let nsScreen = NSScreen.screens.first(where: { $0.frame.intersects(rect) }) else {
                 throw NSError(domain: "ScreenshotService", code: -2, userInfo: [
-                    NSLocalizedDescriptionKey: "Aucun écran trouvé pour la zone sélectionnée"
+                    NSLocalizedDescriptionKey: "No screen found for selected area"
                 ])
             }
 
@@ -316,7 +316,7 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
                 print("⚠️ [ScreenCaptureKit] Display ID \(displayID) not found, using first display")
                 guard let fallbackDisplay = content.displays.first else {
                     throw NSError(domain: "ScreenshotService", code: -3, userInfo: [
-                        NSLocalizedDescriptionKey: "Aucun écran disponible"
+                        NSLocalizedDescriptionKey: "No screen available"
                     ])
                 }
                 targetDisplay = fallbackDisplay
@@ -347,7 +347,7 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
                 relativeRect = rectInScreenPoints.intersection(screenBounds)
                 guard !relativeRect.isNull else {
                     throw NSError(domain: "ScreenshotService", code: -4, userInfo: [
-                        NSLocalizedDescriptionKey: "Sélection hors de l'écran sélectionné"
+                        NSLocalizedDescriptionKey: "Selection outside screen bounds"
                     ])
                 }
                 print("✂️ [ScreenCaptureKit] Relative rect after clipping: \(relativeRect)")
@@ -398,22 +398,22 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             switch error.code {
             case .userDeclined:
                 throw NSError(domain: "ScreenshotService", code: -10, userInfo: [
-                    NSLocalizedDescriptionKey: "Permission de capture d'écran refusée. Allez dans Préférences Système > Confidentialité et sécurité > Enregistrement d'écran."
+                    NSLocalizedDescriptionKey: "Screen recording permission denied. Go to System Settings > Privacy & Security > Screen Recording."
                 ])
             case .systemStoppedStream:
                 throw NSError(domain: "ScreenshotService", code: -11, userInfo: [
-                    NSLocalizedDescriptionKey: "Capture interrompue par le système"
+                    NSLocalizedDescriptionKey: "Capture interrupted by system"
                 ])
             default:
                 throw NSError(domain: "ScreenshotService", code: -12, userInfo: [
-                    NSLocalizedDescriptionKey: "Erreur de capture: \(error.localizedDescription)"
+                    NSLocalizedDescriptionKey: "Capture error: \(error.localizedDescription)"
                 ])
             }
 
         } catch {
-            print("❌ [ScreenCaptureKit] Erreur générale: \(error)")
+            print("❌ [ScreenCaptureKit] General error: \(error)")
             throw NSError(domain: "ScreenshotService", code: -13, userInfo: [
-                NSLocalizedDescriptionKey: "Échec de la capture d'écran: \(error.localizedDescription)"
+                NSLocalizedDescriptionKey: "Screenshot capture failed: \(error.localizedDescription)"
             ])
         }
     }

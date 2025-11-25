@@ -317,15 +317,16 @@ struct OnboardingContentView: View {
                             .padding(.vertical, 12)
                             .background(
                                 LinearGradient(
-                                    colors: [currentPage.color, currentPage.color.opacity(0.8)],
+                                    colors: canContinue ? [currentPage.color, currentPage.color.opacity(0.8)] : [Color.gray, Color.gray.opacity(0.8)],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                             .cornerRadius(10)
-                            .shadow(color: currentPage.color.opacity(0.3), radius: 8, x: 0, y: 4)
+                            .shadow(color: canContinue ? currentPage.color.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
                     }
                     .buttonStyle(.plain)
+                    .disabled(!canContinue)
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 60)
@@ -423,13 +424,14 @@ struct OnboardingContentView: View {
                 .padding(.top, 24)
             } else if currentPage == .autoCleanup {
                 VStack(spacing: 16) {
-                    // Option 1: Default (Pictures) - Requires Permission
+                    #if APPSTORE
+                    // App Store: ONLY user-selected folder option (Apple guideline 2.4.5(i))
                     storageOption(
                         title: NSLocalizedString("onboarding.storage.default.title", comment: ""),
-                        description: NSLocalizedString("onboarding.storage.default.desc", comment: ""),
+                        description: "Select a folder accessible in Finder.\nYour screenshots will be saved there.",
                         icon: "folder.circle.fill",
                         color: .blue,
-                        isSelected: !settings.saveFolderPath.contains("T/PastScreen") && !settings.saveFolderPath.contains("/tmp/"),
+                        isSelected: settings.hasValidBookmark,
                         action: {
                             if let path = settings.selectFolder() {
                                 settings.saveFolderPath = path
@@ -438,19 +440,50 @@ struct OnboardingContentView: View {
                         }
                     )
 
-                    // Option 2: Temp (Auto-Clean)
+                    // Show selected folder path
+                    if settings.hasValidBookmark {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text(settings.saveFolderPath)
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        .padding(.top, 8)
+                    }
+                    #else
+                    // GitHub: Both options available
+                    // Option 1: Custom folder selection
+                    storageOption(
+                        title: NSLocalizedString("onboarding.storage.default.title", comment: ""),
+                        description: NSLocalizedString("onboarding.storage.default.desc", comment: ""),
+                        icon: "folder.circle.fill",
+                        color: .blue,
+                        isSelected: !settings.saveFolderPath.contains("T/PastScreen") && !settings.saveFolderPath.contains("/tmp/") && !settings.saveFolderPath.contains("/Pictures/PastScreen"),
+                        action: {
+                            if let path = settings.selectFolder() {
+                                settings.saveFolderPath = path
+                                settings.saveToFile = true
+                            }
+                        }
+                    )
+
+                    // Option 2: Pictures/PastScreen (Auto-Clean)
                     storageOption(
                         title: NSLocalizedString("onboarding.storage.temp.title", comment: ""),
                         description: NSLocalizedString("onboarding.storage.temp.desc", comment: ""),
                         icon: "trash.circle.fill",
                         color: .purple,
-                        isSelected: settings.saveFolderPath.contains("T/PastScreen") || settings.saveFolderPath.contains("/tmp/"),
+                        isSelected: settings.saveFolderPath.contains("/Pictures/PastScreen"),
                         action: {
-                            let tempPath = NSTemporaryDirectory() + "PastScreen/"
-                            settings.saveFolderPath = tempPath
+                            let autoCleanPath = NSHomeDirectory() + "/Pictures/PastScreen/"
+                            settings.saveFolderPath = autoCleanPath
                             settings.saveToFile = true
                         }
                     )
+                    #endif
                 }
                 .padding(.horizontal, 40)
                 .padding(.top, 10)
@@ -533,6 +566,17 @@ struct OnboardingContentView: View {
         } else {
             return NSLocalizedString("onboarding.button.next", comment: "")
         }
+    }
+
+    /// Check if user can continue to next page (App Store requires folder selection)
+    private var canContinue: Bool {
+        #if APPSTORE
+        // App Store: Block progress on storage page until folder is selected
+        if currentPage == .autoCleanup {
+            return settings.hasValidBookmark
+        }
+        #endif
+        return true
     }
 
     private func nextPage() {

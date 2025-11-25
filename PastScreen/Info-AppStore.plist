@@ -17,16 +17,16 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.0</string>
+	<string>2.1</string>
 	<key>CFBundleVersion</key>
-	<string>14</string>
+	<string>15</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.developer-tools</string>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>PastScreen utilise les événements Apple pour les raccourcis clavier globaux.</string>
+	<string>PastScreen uses Apple Events for global keyboard shortcuts.</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>PastScreen nécessite l'accès à la capture d'écran pour prendre des screenshots.</string>
+	<string>PastScreen requires screen recording access to capture screenshots.</string>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>PastScreen affiche des notifications pour confirmer les captures d'écran.</string>
+	<string>PastScreen displays notifications to confirm screenshot captures.</string>
 </dict>
 </plist>

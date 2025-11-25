@@ -5,11 +5,11 @@ import SwiftUI
 @available(macOS 14.0, *)
 struct QuickCaptureTip: Tip {
     var title: Text {
-        Text("Astuce PastScreen")
+        Text("PastScreen Tip")
     }
 
     var message: Text? {
-        Text("Utilisez ⌥⌘S ou les Raccourcis Apple pour lancer une capture instantanée.")
+        Text("Use ⌥⌘S or Apple Shortcuts for instant capture.")
     }
 
     var image: Image? {

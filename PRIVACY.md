@@ -1,6 +1,6 @@
 # Privacy Policy for PastScreen
 
-**Last Updated:** November 18, 2025
+**Last Updated:** November 24, 2025
 
 ## Overview
 
@@ -22,7 +22,7 @@ PastScreen is a privacy-first screenshot application for macOS. We take your pri
 All screenshot processing happens locally on your Mac:
 
 - Screenshots are captured using macOS Screen Capture APIs
-- Images are saved to your local disk (default: `~/Pictures/Screenshots/`)
+- Images are saved to your local disk in a user-selected folder
 - Clipboard operations use standard macOS pasteboard APIs
 - All settings are stored locally in macOS UserDefaults
 
@@ -48,6 +48,66 @@ PastScreen requires the following macOS system permissions to function:
 - **Scope:** Limited to screenshot capture confirmations
 
 **PastScreen only uses these permissions for their stated purposes and does not access any other system resources.**
+
+## Screen Recording Data - Detailed Disclosure
+
+This section provides comprehensive information about how PastScreen uses the Screen Recording permission, in compliance with Apple App Store guidelines.
+
+### What Features Use Screen Recording
+
+PastScreen uses screen recording for **ONE purpose only**: screenshot capture. When you trigger a capture:
+1. A selection overlay appears on your screen
+2. You select a rectangular region by clicking and dragging
+3. The app captures ONLY that selected region as a static image
+4. The image is saved locally and/or copied to your clipboard
+
+**No background recording. No continuous capture. No video recording.**
+
+### What Data Is Collected Via Screen Recording
+
+When you take a screenshot, PastScreen captures:
+- **Static image data**: A single PNG or JPG image of your selected screen region
+
+PastScreen does NOT collect:
+- No metadata embedded in images (no timestamps, no location, no device IDs)
+- No text extraction or OCR
+- No image analysis or content scanning
+- No facial recognition
+- No object detection
+
+### Purpose of Screen Recording Data
+
+The captured screenshot data is used SOLELY for:
+- Saving the image to your local disk (user-selected folder)
+- Copying the image to your clipboard for pasting into other applications
+
+**There is no other use.** PastScreen is a simple utility that captures and saves screenshots at your explicit request.
+
+### Third-Party Sharing
+
+**NO screenshot data is shared with any third party:**
+- No cloud uploads
+- No network transmission of images
+- No analytics services receive image data
+- No advertising networks
+- No external APIs are called with your screenshots
+
+**All screenshot data remains 100% local on your device.**
+
+### Data Storage Location
+
+Your screenshots are stored in TWO places only, both on your local device:
+- **Local disk**: In a folder you explicitly select via the standard macOS folder picker (accessible in Finder)
+- **System clipboard**: Temporarily, for paste operations into other applications
+
+**No cloud storage. No external servers. No remote databases.**
+
+### Data Retention
+
+- Screenshots remain on your disk until YOU manually delete them
+- Clipboard data is replaced when you copy something else
+- PastScreen does not automatically delete your screenshots (unless you use a custom cleanup setting)
+- You have full control over your screenshot files at all times
 
 ## Data Storage
 
