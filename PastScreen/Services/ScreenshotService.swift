@@ -492,53 +492,39 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             return filePath
         }
 
-        // Determine effective format for other cases
-        let effectiveCategory: AppCategory
-        if overrideFormat == .auto {
-            effectiveCategory = detectFrontmostApp()
-        } else {
-            // Map remaining overrides
-            switch overrideFormat {
-            case .path: effectiveCategory = .codeEditor
-            default: effectiveCategory = detectFrontmostApp()
-            }
-        }
-
-        switch effectiveCategory {
-        case .codeEditor:
-            // Code editors prefer file paths for Markdown linking
+        // Handle Path Only override
+        if overrideFormat == .path {
+            // FORCE PATH ONLY mode: Just the file path as string
             if let imagePath = getSavedPath() {
                 pasteboard.setString(imagePath, forType: .string)
-                print("✅ [CLIPBOARD] File path copied (Code Editor mode): \(imagePath)")
+                print("✅ [CLIPBOARD] File path ONLY copied (Force Path mode): \(imagePath)")
             } else {
                 // Fallback: write image if file save fails
                 pasteboard.writeObjects([image])
                 print("⚠️ [CLIPBOARD] File save failed, copied image data instead")
             }
+            return filePath
+        }
 
-        case .webBrowser, .designTool:
-            // Browsers and design tools need actual image data
-            pasteboard.writeObjects([image])
-            if let imagePath = getSavedPath() {
-                // Use NSURL instead of String to prevent web apps from preferring text over image
-                let url = NSURL(fileURLWithPath: imagePath)
-                pasteboard.writeObjects([url])
-                print("✅ [CLIPBOARD] Image data + File URL copied (Browser mode)")
-            } else {
-                print("✅ [CLIPBOARD] Image data copied (no path)")
-            }
+        // Detect if source app is a code editor/terminal
+        let isCodeEditor = (overrideFormat == .auto) && (detectFrontmostApp() == .codeEditor)
 
-        case .unknown:
-            // Unknown apps: write BOTH formats for maximum compatibility
-            pasteboard.writeObjects([image])
+        if isCodeEditor {
+            // Code Editors/Terminals: Path ONLY (for Markdown linking in Zed, VSCode, etc.)
             if let imagePath = getSavedPath() {
-                // Convert to NSURL which conforms to NSPasteboardWriting
-                let url = NSURL(fileURLWithPath: imagePath)
-                pasteboard.writeObjects([url])
-                print("✅ [CLIPBOARD] Image data + File URL copied (Unknown mode)")
+                pasteboard.setString(imagePath, forType: .string)
+                print("✅ [CLIPBOARD] Path string ONLY copied (Code Editor source)")
             } else {
-                print("✅ [CLIPBOARD] Image data copied (file save failed)")
+                // Fallback: write image if file save fails
+                pasteboard.writeObjects([image])
+                print("⚠️ [CLIPBOARD] File save failed, copied image data instead")
             }
+        } else {
+            // Default for all other apps: Image ONLY
+            // This covers browsers, Slack, Discord, Finder, etc.
+            pasteboard.writeObjects([image])
+            _ = getSavedPath()  // Still save file for history
+            print("✅ [CLIPBOARD] Image ONLY copied (Universal mode)")
         }
         return filePath
     }

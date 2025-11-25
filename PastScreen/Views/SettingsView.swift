@@ -150,8 +150,6 @@ struct GeneralSettingsView: View {
                         Toggle("Show in Dock", isOn: $settings.showInDock)
                         Divider()
                         Toggle("Play capture sound", isOn: $settings.playSoundOnCapture)
-                        Divider()
-                        Toggle("Check for updates automatically", isOn: $settings.autoCheckUpdates)
                     }
                     .padding(12)
                 }
@@ -255,8 +253,7 @@ struct StorageSettingsView: View {
                         Toggle("Save to Disk", isOn: $settings.saveToFile)
                             .onChange(of: settings.saveToFile) { _, newValue in
                                 if newValue {
-                                    #if APPSTORE
-                                    // App Store: ALWAYS require valid bookmark (user-selected folder)
+                                    // ALWAYS require valid bookmark (user-selected folder)
                                     if !settings.hasValidBookmark {
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                             if let newPath = settings.selectFolder() {
@@ -264,22 +261,6 @@ struct StorageSettingsView: View {
                                             }
                                         }
                                     }
-                                    #else
-                                    // GitHub: Check for temp path OR default Pictures path without bookmark permission
-                                    let isTemp = settings.saveFolderPath.contains(NSTemporaryDirectory()) ||
-                                                 settings.saveFolderPath.contains("/T/PastScreen") ||
-                                                 settings.saveFolderPath.contains("/tmp/")
-
-                                    let isPicturesWithoutAccess = settings.saveFolderPath.contains("Pictures/PastScreen") && !settings.hasValidBookmark
-
-                                    if isTemp || isPicturesWithoutAccess {
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            if let newPath = settings.selectFolder() {
-                                                settings.saveFolderPath = newPath
-                                            }
-                                        }
-                                    }
-                                    #endif
                                 }
                             }
 
@@ -337,13 +318,17 @@ struct AppsSettingsView: View {
         VStack(spacing: 16) {
             GroupBox {
                 VStack(spacing: 12) {
-                    Text("Override clipboard behavior per application.")
+                    Text("Smart clipboard format based on source app:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
 
-                    Text("Force 'Image' for AI/Chats, or 'Path' for Code Editors.")
+                    Text("• From Code Editors/Terminals → Path only\n• From any other app → Image only")
                         .font(.caption)
                         .foregroundColor(.secondary)
+
+                    Text("Add overrides below to force a specific format for certain apps.")
+                        .font(.caption)
+                        .foregroundColor(.orange)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(12)

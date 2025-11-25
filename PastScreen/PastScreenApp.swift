@@ -9,9 +9,6 @@ import SwiftUI
 import AppKit
 import UserNotifications
 import Combine
-#if !APPSTORE
-import Sparkle
-#endif
 #if canImport(TipKit)
 import TipKit
 #endif
@@ -53,11 +50,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     // Services
     var permissionManager = PermissionManager.shared
-
-    #if !APPSTORE
-    // Sparkle auto-updater
-    private var updaterController: SPUStandardUpdaterController?
-    #endif
 
     var settings = AppSettings.shared
     private let hotKeyManager = HotKeyManager.shared
@@ -174,26 +166,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             NSLog("🚀 [APP] Calling OnboardingManager.showIfNeeded()")
             OnboardingManager.shared.showIfNeeded()
         }
-
-        #if !APPSTORE
-        // Initialize Sparkle auto-updater
-        updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
-            updaterDelegate: nil,
-            userDriverDelegate: nil
-        )
-        NSLog("✅ [SPARKLE] Auto-updater initialized")
-        #else
-        NSLog("ℹ️ [APP] Running App Store build - Sparkle disabled")
-        #endif
-
-        #if !APPSTORE
-        // GitHub only: Auto-cleanup if using Pictures/PastScreen folder
-        if settings.saveFolderPath.contains("/Pictures/PastScreen") {
-            settings.clearSaveFolder()
-            NSLog("🧹 [APP] Auto-cleanup on launch for Pictures/PastScreen folder")
-        }
-        #endif
     }
 
     @objc func handleScreenshotCaptured(_ notification: Notification) {
@@ -279,17 +251,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let prefsItem = NSMenuItem(title: NSLocalizedString("menu.preferences", comment: ""), action: #selector(openPreferences), keyEquivalent: ",")
         prefsItem.target = self
         menu.addItem(prefsItem)
-
-        #if !APPSTORE
-        // Check for Updates... (only for direct distribution, not App Store)
-        let checkUpdatesItem = NSMenuItem(
-            title: NSLocalizedString("menu.check_updates", comment: "Check for Updates..."),
-            action: #selector(checkForUpdates),
-            keyEquivalent: ""
-        )
-        checkUpdatesItem.target = self
-        menu.addItem(checkUpdatesItem)
-        #endif
 
         menu.addItem(NSMenuItem.separator())
 
@@ -427,12 +388,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
-
-    #if !APPSTORE
-    @objc func checkForUpdates() {
-        updaterController?.checkForUpdates(nil)
-    }
-    #endif
 
     @objc func quit() {
         // Fermer toutes les fenêtres ouvertes

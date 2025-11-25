@@ -66,12 +66,6 @@ class AppSettings: ObservableObject {
         }
     }
 
-    @Published var autoCheckUpdates: Bool {
-        didSet {
-            UserDefaults.standard.set(autoCheckUpdates, forKey: "autoCheckUpdates")
-        }
-    }
-
     @Published var launchAtLogin: Bool {
         didSet {
             UserDefaults.standard.set(launchAtLogin, forKey: "launchAtLogin")
@@ -110,36 +104,25 @@ class AppSettings: ObservableObject {
         return saveFolderBookmark != nil
     }
 
-    /// Check if a valid save folder is configured (for App Store: requires user selection)
+    /// Check if a valid save folder is configured (requires user selection with bookmark)
     var hasValidSaveFolder: Bool {
-        #if APPSTORE
-        // App Store requires user-selected folder with valid bookmark
+        // Requires user-selected folder with valid bookmark (App Store compliance)
         return !saveFolderPath.isEmpty && hasValidBookmark
-        #else
-        // GitHub version: any non-empty path is valid
-        return !saveFolderPath.isEmpty
-        #endif
     }
 
     private init() {
         // Load saved values or use defaults
         self.saveToFile = UserDefaults.standard.object(forKey: "saveToFile") as? Bool ?? true  // Changed default to true
 
-        #if APPSTORE
-        // App Store: No default path - user MUST select a folder via NSOpenPanel
+        // No default path - user MUST select a folder via NSOpenPanel
         // This complies with Apple guideline 2.4.5(i) - user-accessible storage
         let defaultPath = ""  // Empty = forces folder selection
-        #else
-        // GitHub: Default to Pictures/PastScreen (auto-cleaned on app restart)
-        let defaultPath = NSHomeDirectory() + "/Pictures/PastScreen/"
-        #endif
         self.saveFolderPath = UserDefaults.standard.string(forKey: "saveFolderPath") ?? defaultPath
 
         self.imageFormat = UserDefaults.standard.string(forKey: "imageFormat") ?? "png"
         self.playSoundOnCapture = UserDefaults.standard.object(forKey: "playSoundOnCapture") as? Bool ?? true
         self.globalHotkeyEnabled = UserDefaults.standard.object(forKey: "globalHotkeyEnabled") as? Bool ?? true
         self.showInDock = UserDefaults.standard.object(forKey: "showInDock") as? Bool ?? true
-        self.autoCheckUpdates = UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true  // Default: auto-check enabled
         self.launchAtLogin = UserDefaults.standard.object(forKey: "launchAtLogin") as? Bool ?? false  // Default: disabled
         self.captureHistory = UserDefaults.standard.stringArray(forKey: "captureHistory") ?? []
 

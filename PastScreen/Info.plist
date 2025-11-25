@@ -28,15 +28,5 @@
 	<string>PastScreen requires screen recording access to capture screenshots.</string>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>PastScreen displays notifications to confirm screenshot captures.</string>
-	<key>SUAllowsAutomaticUpdates</key>
-	<true/>
-	<key>SUAutomaticallyUpdate</key>
-	<false/>
-	<key>SUEnableAutomaticChecks</key>
-	<true/>
-	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/augiefra/PastScreen/main/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>0kgGfpfzDCMIcKXLqaNbUM+p14CHFGib3GqG3FtCOSk=</string>
 </dict>
 </plist>

@@ -2,13 +2,13 @@
 
 ## Résumé
 - App macOS 14+ ultra-rapide de capture d'écran orientée développeurs, résidant dans la barre de menus (icône seule, `LSUIElement = YES`), qui envoie chaque capture au presse-papier (PNG + chemin) et, si souhaité, la stocke sur disque.
-- Version 1.7 « Launch at Login + polish » : ajout du lancement automatique au démarrage du Mac, corrections du flux onboarding et des calculs de géométrie de capture.
-- Historique : v1.6 apportait les conversions ScreenCaptureKit multi-écran fiabilisées et le clipboard "context-aware".
-- Développement quotidien sur `PastScreen-dev` (privé), publication publique/Sparkle sur `PastScreen`.
+- Version 2.1: App Store-only distribution. Sources open-source sur GitHub pour transparence et contributions.
+- Historique : v1.7 apportait Launch at Login, v1.6 ScreenCaptureKit multi-écran et clipboard "context-aware".
+- Distribution : Mac App Store (paid convenience) + sources GitHub (open-source).
 
 ## Stack & Architecture
 - Swift 5.9, AppKit + SwiftUI (AppKit pour menu bar/overlays, SwiftUI pour préférences/onboarding).
-- Entrée `PastScreenApp` (SwiftUI `App`) → `AppDelegate` (menu bar, Sparkle, hotkey global, services).
+- Entrée `PastScreenApp` (SwiftUI `App`) → `AppDelegate` (menu bar, hotkey global, services).
 - Services principaux :
   - `ScreenshotService` : overlay multi-écran (« Liquid Glass »), capture ScreenCaptureKit/CG, gestion clipboard + fichiers, notifications custom.
   - `PermissionManager` : vérifie/demande Screen Recording, Accessibility, Notifications (flux onboarding).
@@ -27,15 +27,21 @@
 
 ## Permissions & livrables
 - Permissions requises : Screen Recording (capture), Accessibility (raccourci global), Notifications.
-- Entitlements définis dans `PastScreen.entitlements`. Pas d’upload de données.
-- Sparkle 2.8 pour auto-update (clés EdDSA, feed `appcast.xml`).
+- Entitlements définis dans `PastScreen.entitlements` (App Sandbox compliant).
+- Pas d'upload de données, aucune collecte analytics.
 
-## Workflow release (automatisé via `scripts/package_release.sh`)
-- Incrément version/build dans Xcode + Info.plist → Archive → Export app → Notarization + Staple.
-- Script automatique : `./scripts/package_release.sh ~/Desktop/PastScreen.app ~/Desktop/PastScreen`
-  - Crée le ZIP avec `ditto`, signe avec Sparkle (`sign_update`), met à jour `appcast.xml`.
-- Publier GitHub Release via `gh release create` (tag `vX.Y`, upload zip, notes).
-- Push vers `public` (distribution) et `origin` (dev) + vérifier feed Sparkle.
+## Workflow release (App Store Connect)
+- Incrément version/build dans Xcode + Info.plist
+- Archive via Product → Archive (Xcode)
+- Upload via Xcode Organizer → Distribute App → App Store Connect
+- Submit for review via App Store Connect web interface
+- Updates via App Store (automatic for users)
+
+## Build from Source (Open Source)
+- Clone: `git clone https://github.com/augiefra/PastScreen.git`
+- Open `PastScreen.xcodeproj` in Xcode
+- Build & Run (⌘R)
+- Note: Manual updates via `git pull` (no auto-update for source builds)
 
 ## Points d'attention actuels
 - Pas (encore) de tests automatisés ; validation manuelle (hotkey, multi-écrans, permissions, clipboard, launch at login).

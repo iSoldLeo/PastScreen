@@ -120,14 +120,7 @@ Screenshots are stored locally on your Mac:
 
 ## Third-Party Services
 
-### Sparkle Framework (Direct Distribution Only)
-The direct download version from GitHub uses Sparkle for auto-updates:
-- **Purpose:** Check for app updates
-- **Data sent:** macOS version, app version (no personal information)
-- **Frequency:** On app launch (if enabled)
-- **Open source:** [Sparkle Project](https://github.com/sparkle-project/Sparkle)
-
-**Note:** The Mac App Store version does NOT include Sparkle and uses Apple's App Store update mechanism instead.
+PastScreen does not use any third-party analytics, tracking, or data collection services. All functionality is self-contained within the app.
 
 ## Open Source
 

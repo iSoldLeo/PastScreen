@@ -424,8 +424,7 @@ struct OnboardingContentView: View {
                 .padding(.top, 24)
             } else if currentPage == .autoCleanup {
                 VStack(spacing: 16) {
-                    #if APPSTORE
-                    // App Store: ONLY user-selected folder option (Apple guideline 2.4.5(i))
+                    // ONLY user-selected folder option (Apple guideline 2.4.5(i) compliance)
                     storageOption(
                         title: NSLocalizedString("onboarding.storage.default.title", comment: ""),
                         description: "Select a folder accessible in Finder.\nYour screenshots will be saved there.",
@@ -453,37 +452,6 @@ struct OnboardingContentView: View {
                         }
                         .padding(.top, 8)
                     }
-                    #else
-                    // GitHub: Both options available
-                    // Option 1: Custom folder selection
-                    storageOption(
-                        title: NSLocalizedString("onboarding.storage.default.title", comment: ""),
-                        description: NSLocalizedString("onboarding.storage.default.desc", comment: ""),
-                        icon: "folder.circle.fill",
-                        color: .blue,
-                        isSelected: !settings.saveFolderPath.contains("T/PastScreen") && !settings.saveFolderPath.contains("/tmp/") && !settings.saveFolderPath.contains("/Pictures/PastScreen"),
-                        action: {
-                            if let path = settings.selectFolder() {
-                                settings.saveFolderPath = path
-                                settings.saveToFile = true
-                            }
-                        }
-                    )
-
-                    // Option 2: Pictures/PastScreen (Auto-Clean)
-                    storageOption(
-                        title: NSLocalizedString("onboarding.storage.temp.title", comment: ""),
-                        description: NSLocalizedString("onboarding.storage.temp.desc", comment: ""),
-                        icon: "trash.circle.fill",
-                        color: .purple,
-                        isSelected: settings.saveFolderPath.contains("/Pictures/PastScreen"),
-                        action: {
-                            let autoCleanPath = NSHomeDirectory() + "/Pictures/PastScreen/"
-                            settings.saveFolderPath = autoCleanPath
-                            settings.saveToFile = true
-                        }
-                    )
-                    #endif
                 }
                 .padding(.horizontal, 40)
                 .padding(.top, 10)
@@ -568,14 +536,12 @@ struct OnboardingContentView: View {
         }
     }
 
-    /// Check if user can continue to next page (App Store requires folder selection)
+    /// Check if user can continue to next page (requires folder selection)
     private var canContinue: Bool {
-        #if APPSTORE
-        // App Store: Block progress on storage page until folder is selected
+        // Block progress on storage page until folder is selected
         if currentPage == .autoCleanup {
             return settings.hasValidBookmark
         }
-        #endif
         return true
     }
 
