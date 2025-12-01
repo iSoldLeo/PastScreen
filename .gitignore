@@ -101,3 +101,7 @@ screen/
 
 .gemini/
 gha-creds-*.json
+
+# Build logs and temporary files
+build_log*.txt
+*.log
