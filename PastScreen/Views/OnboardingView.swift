@@ -576,12 +576,8 @@ struct OnboardingContentView: View {
 
     private func requestScreenRecordingPermission() {
         // Trigger native macOS Screen Recording popup
-        print("🔐 [ONBOARDING] Requesting Screen Recording permission via native popup")
         PermissionManager.shared.requestPermission(.screenRecording) { granted in
-            if granted {
-                print("✅ [ONBOARDING] Screen Recording permission granted")
-            } else {
-                print("⚠️ [ONBOARDING] Screen Recording permission denied or needs System Preferences")
+            if !granted {
                 // Fallback: open system settings if popup doesn't appear or user denied
                 DispatchQueue.main.async {
                     self.openSystemPreferences(pane: "ScreenCapture")
@@ -599,7 +595,6 @@ struct OnboardingContentView: View {
                             self.screenRecordingGranted = true
                             PermissionManager.shared.checkScreenRecordingPermission()
                             timer.invalidate()
-                            print("✅ Screen Recording permission granted (detected via polling)")
                         }
                     } catch {
                         // Still waiting for permission
@@ -610,7 +605,6 @@ struct OnboardingContentView: View {
                     self.screenRecordingGranted = true
                     PermissionManager.shared.checkScreenRecordingPermission()
                     timer.invalidate()
-                    print("✅ Screen Recording permission granted (detected via polling)")
                 }
             }
         }
@@ -618,12 +612,8 @@ struct OnboardingContentView: View {
 
     private func requestAccessibilityPermission() {
         // Trigger native macOS Accessibility popup
-        print("🔐 [ONBOARDING] Requesting Accessibility permission via native popup")
         PermissionManager.shared.requestPermission(.accessibility) { granted in
-            if granted {
-                print("✅ [ONBOARDING] Accessibility permission granted")
-            } else {
-                print("⚠️ [ONBOARDING] Accessibility permission denied or needs System Preferences")
+            if !granted {
                 // Fallback: open system settings if popup doesn't appear or user denied
                 DispatchQueue.main.async {
                     self.openSystemPreferences(pane: "Accessibility")
@@ -637,7 +627,6 @@ struct OnboardingContentView: View {
                 self.accessibilityGranted = true
                 PermissionManager.shared.checkAccessibilityPermission()
                 timer.invalidate()
-                print("✅ Accessibility permission granted (detected via polling)")
             }
         }
     }

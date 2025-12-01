@@ -45,14 +45,12 @@ class HotKeyManager {
         stopMonitoring()
 
         guard settings.globalHotkeyEnabled else {
-            print("ℹ️ [HOTKEY] Global hotkey is disabled in settings.")
             return
         }
 
         // The hotkey requires Accessibility permissions. We check for them here but
         // do not prompt the user. The onboarding flow is responsible for requesting permissions.
         guard AXIsProcessTrusted() else {
-            print("⚠️ [HOTKEY] Accessibility permissions not granted. Global hotkey will not work.")
             return
         }
 
@@ -72,18 +70,13 @@ class HotKeyManager {
             let isSKey = event.keyCode == 1 || event.characters?.lowercased() == "s"
 
             if isCorrectModifiers && isSKey {
-                print("🎯 [HOTKEY] Global hotkey ⌥⌘S detected!")
                 // Post a notification to decouple the hotkey detection from the action.
                 // The AppDelegate will listen for this notification to trigger a screenshot.
                 NotificationCenter.default.post(name: .hotKeyPressed, object: nil)
             }
         }
 
-        if globalEventMonitor != nil {
-            print("✅ [HOTKEY] Global hotkey monitor started successfully.")
-        } else {
-            print("❌ [HOTKEY] Failed to start global hotkey monitor.")
-        }
+
     }
 
     /// Stops listening for the global hotkey.
@@ -91,7 +84,6 @@ class HotKeyManager {
         if let monitor = globalEventMonitor {
             NSEvent.removeMonitor(monitor)
             globalEventMonitor = nil
-            print("⏹️ [HOTKEY] Global hotkey monitor stopped.")
         }
     }
 }

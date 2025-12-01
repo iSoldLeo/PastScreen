@@ -22,8 +22,6 @@ class CustomNotificationManager {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            print("📢 [CUSTOM NOTIF] Showing: \(title) - \(message)")
-
             // Dismiss any existing notification
             self.dismiss()
 
@@ -45,10 +43,7 @@ class CustomNotificationManager {
             let notificationHeight: CGFloat = 100
             let screenPadding: CGFloat = 20
 
-            guard let screen = NSScreen.main else {
-                print("❌ [CUSTOM NOTIF] No main screen found")
-                return
-            }
+            guard let screen = NSScreen.main else { return }
 
             let screenFrame = screen.visibleFrame
             let notificationRect = NSRect(
@@ -84,14 +79,10 @@ class CustomNotificationManager {
             NSAnimationContext.runAnimationGroup({ context in
                 context.duration = 0.3
                 panel.animator().alphaValue = 1.0
-            }, completionHandler: { [weak self] in
-                guard self != nil else { return }
-                print("✅ [CUSTOM NOTIF] Notification displayed")
-            })
+            }, completionHandler: nil)
 
             // Auto-dismiss after duration
             self.dismissTimer = Timer.scheduledTimer(withTimeInterval: self.notificationDuration, repeats: false) { [weak self] _ in
-                print("⏱️ [CUSTOM NOTIF] Auto-dismiss")
                 self?.dismiss()
             }
         }
@@ -109,7 +100,6 @@ class CustomNotificationManager {
         }, completionHandler: { [weak self, weak panel] in
             panel?.close()
             self?.notificationPanel = nil
-            print("🗑️ [CUSTOM NOTIF] Notification dismissed")
         })
     }
 }
@@ -196,7 +186,6 @@ struct CustomNotificationContentView: View {
 
     private func openInFinder() {
         guard let path = filePath else { return }
-        print("🖱️ [CUSTOM NOTIF] Opening Finder: \(path)")
         NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
         onDismiss()
     }

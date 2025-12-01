@@ -101,9 +101,6 @@ class SelectionWindow: NSWindow {
 
             window.contentView = overlayView
             overlayWindows.append(window)
-
-            print("✅ [MULTI-SCREEN] Created overlay for screen: \(screen.localizedName)")
-            print("   Frame: \(screen.frame), canBecomeKey: \(window.canBecomeKey)")
         }
     }
 
@@ -128,25 +125,18 @@ class SelectionWindow: NSWindow {
             // First window becomes key, others just order front
             if index == 0 {
                 window.makeKeyAndOrderFront(nil)
-                print("✅ [MULTI-SCREEN] Screen \(index) (main) - Making key and ordering front")
             } else {
                 window.orderFrontRegardless()
-                print("✅ [MULTI-SCREEN] Screen \(index) - Ordering front regardless")
             }
-            print("   Frame: \(window.frame), Level: \(window.level.rawValue)")
         }
-
-        print("✅ [MULTI-SCREEN] Showing \(overlayWindows.count) overlay window(s)")
     }
 
     func hide() {
         // Hide all overlay windows immediately
-        for (index, window) in overlayWindows.enumerated() {
+        for window in overlayWindows {
             window.orderOut(nil)
             window.ignoresMouseEvents = true
-            print("🙈 [MULTI-SCREEN] Screen \(index) - orderOut() called, ignoresMouseEvents: true")
         }
-        print("✅ [MULTI-SCREEN] Hidden \(overlayWindows.count) overlay window(s)")
     }
 
     // Get overlay window IDs for ScreenCaptureKit exclusion
@@ -156,7 +146,6 @@ class SelectionWindow: NSWindow {
             guard windowNumber > 0 else { return nil }
             return CGWindowID(windowNumber)
         }
-        print("🔢 [MULTI-SCREEN] Extracted \(windowIDs.count) overlay window IDs: \(windowIDs)")
         return windowIDs
     }
 }
@@ -197,7 +186,6 @@ class SelectionOverlayView: NSView {
                 self.endPoint = locationInView
                 self.isDragging = true
                 self.needsDisplay = true
-                print("✅ [GLOBAL] MouseDown captured at \(locationInView)")
             }
         }
 
@@ -231,12 +219,10 @@ class SelectionOverlayView: NSView {
             )
 
             if rect.width > 10 && rect.height > 10 {
-                print("✅ [GLOBAL] MouseUp - Valid selection: \(rect)")
                 DispatchQueue.main.async { [weak self] in
                     self?.emitSelection(rect: rect)
                 }
             } else {
-                print("❌ [GLOBAL] MouseUp - Selection too small, canceling")
                 DispatchQueue.main.async { [weak self] in
                     self?.onCancel?()
                 }
@@ -322,7 +308,6 @@ class SelectionOverlayView: NSView {
         // Convert from view coordinates → window → screen to get the actual desktop rect
         let rectInWindow = convert(rect, to: nil)
         let rectOnScreen = window.convertToScreen(rectInWindow)
-        print("🌐 [GLOBAL] windowOrigin: \(window.frame.origin), rectInWindow: \(rectInWindow), rectOnScreen: \(rectOnScreen)")
         onComplete?(rectOnScreen)
     }
 

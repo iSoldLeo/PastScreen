@@ -51,8 +51,8 @@ struct SettingsView: View {
                 }
                 Spacer()
 
-                // Footer
-                Text("v1.9 (13)")
+                // Footer - Read version dynamically from Bundle
+                Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"))")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 8)
@@ -92,7 +92,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(nsColor: .windowBackgroundColor))
         }
-        .frame(width: 750, height: 500)
+        .frame(width: 750, height: 580)
     }
 }
 
@@ -168,6 +168,46 @@ struct GeneralSettingsView: View {
                         Spacer()
                         Button("Show Tutorial") {
                             OnboardingManager.shared.show()
+                        }
+                    }
+                    .padding(12)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Privacy", systemImage: "hand.raised.fill")
+                    .font(.headline)
+                    .padding(.leading, 2)
+
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Your Privacy Matters")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+
+                                Text("PastScreen collects zero data. Everything stays on your Mac.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                        }
+
+                        Divider()
+
+                        HStack {
+                            Text("• No analytics or tracking\n• No cloud uploads\n• No third-party services\n• Local-only operation")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Spacer()
+
+                            Button("View Full Policy") {
+                                if let url = URL(string: "https://github.com/augiefra/PastScreen/blob/main/PRIVACY.md") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }
                         }
                     }
                     .padding(12)
@@ -318,17 +358,18 @@ struct AppsSettingsView: View {
         VStack(spacing: 16) {
             GroupBox {
                 VStack(spacing: 12) {
-                    Text("Smart clipboard format based on source app:")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    HStack {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(.blue)
+                        Text("Default: Image is copied to clipboard")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
 
-                    Text("• From Code Editors/Terminals → Path only\n• From any other app → Image only")
+                    Text("Add an app below and set it to **Path** if you want the file path copied instead (useful for terminals).")
                         .font(.caption)
                         .foregroundColor(.secondary)
-
-                    Text("Add overrides below to force a specific format for certain apps.")
-                        .font(.caption)
-                        .foregroundColor(.orange)
+                        .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(12)
@@ -349,7 +390,7 @@ struct AppsSettingsView: View {
                             Text("No application rules")
                                 .font(.headline)
 
-                            Text("Add apps to override clipboard behavior.\nForce 'Image' for AI/Chats or 'Path' for Editors.")
+                            Text("Add apps to change clipboard behavior.\nUse 'Path' for terminals that need the file path.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -376,11 +417,10 @@ struct AppsSettingsView: View {
                                     Spacer()
 
                                     Picker("", selection: $override.format) {
-                                        Text("Auto").tag(ClipboardFormat.auto)
-                                        Text("Image Only").tag(ClipboardFormat.image)
-                                        Text("Path Only").tag(ClipboardFormat.path)
+                                        Text("Image").tag(ClipboardFormat.image)
+                                        Text("Path").tag(ClipboardFormat.path)
                                     }
-                                    .frame(width: 110)
+                                    .frame(width: 90)
                                     .labelsHidden()
 
                                     Button(action: {
@@ -421,7 +461,7 @@ struct AppsSettingsView: View {
         if panel.runModal() == .OK, let url = panel.url {
             if let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier {
                 let name = FileManager.default.displayName(atPath: url.path)
-                let override = AppOverride(bundleIdentifier: bundleID, appName: name, format: .image)
+                let override = AppOverride(bundleIdentifier: bundleID, appName: name, format: .path)
                 settings.addAppOverride(override)
             }
         }

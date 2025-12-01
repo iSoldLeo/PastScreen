@@ -85,12 +85,9 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     ]
 
     func captureScreenshot() {
-        print("🎬 [SERVICE] Launching SelectionWindow for area capture...")
-
         // CRITICAL: Force cleanup of any existing selection window before creating new one
         // (prevents overlay windows from persisting if user takes multiple screenshots rapidly)
         if let existingWindow = selectionWindow {
-            print("⚠️ [SERVICE] Cleaning up existing SelectionWindow before creating new one")
             existingWindow.hide()
             selectionWindow = nil
         }
@@ -99,29 +96,20 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         selectionWindow = SelectionWindow()
         selectionWindow?.selectionDelegate = self
         selectionWindow?.show()
-
-        print("✅ [SERVICE] SelectionWindow displayed on all screens - select area or press ESC to cancel")
     }
 
     // NEW: Full screen capture using ScreenCaptureKit
     func captureFullScreen() {
-        print("🎬 [SERVICE] Starting full screen capture with ScreenCaptureKit...")
-
         // Calculate combined frame covering all screens
         let screenFrame = NSScreen.screens.reduce(NSRect.zero) { $0.union($1.frame) }
-
-        print("✅ [SERVICE] Capturing full screen area: \(screenFrame)")
         performCapture(rect: screenFrame)
     }
 
     // MARK: - SelectionWindowDelegate
 
     func selectionWindow(_ window: SelectionWindow, didSelectRect rect: CGRect) {
-        print("📐 [SELECTION] User selected rect: \(rect)")
-
         // Get overlay window IDs BEFORE hiding (for ScreenCaptureKit exclusion)
         let overlayWindowIDs = window.getOverlayWindowIDs()
-        print("🔢 [SELECTION] Got \(overlayWindowIDs.count) overlay window IDs for exclusion")
 
         // Hide all selection windows
         window.hide()
@@ -137,21 +125,16 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             // Cleanup window reference
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.selectionWindow = nil
-                print("✅ [SELECTION] Window cleaned up")
             }
         }
     }
 
     func selectionWindowDidCancel(_ window: SelectionWindow) {
-        print("❌ [SELECTION] User cancelled selection")
-
         // Hide all selection windows
         window.hide()
 
-        // Delay cleanup to avoid crash
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.selectionWindow = nil
-            print("✅ [SELECTION] Window cleaned up after cancel")
         }
     }
     private func showErrorAlert(_ message: String) {
@@ -166,9 +149,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
     /// Affiche une notification macOS native (toujours UNUserNotification)
     private func showSuccessNotification(filePath: String?) {
-        let pathDescription = filePath ?? "nil"
-        print("🔔 [NOTIF] showSuccessNotification appelée avec filePath: \(pathDescription)")
-
         let content = UNMutableNotificationContent()
         content.title = "PastScreen"
         content.body = NSLocalizedString("notification.screenshot_saved", comment: "")
@@ -176,7 +156,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
         if let filePath = filePath {
             content.userInfo = ["filePath": filePath]
-            print("🔔 [NOTIF] UserInfo configuré avec filePath")
         }
 
         let request = UNNotificationRequest(
@@ -187,24 +166,14 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
         // Send notification without changing activation policy
         // (avoids Dock icon flash that confuses users)
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("❌ [NOTIF] Erreur UNUserNotification: \(error)")
-            } else {
-                print("✅ [NOTIF] UNUserNotification envoyée")
-            }
-        }
+        UNUserNotificationCenter.current().add(request) { _ in }
 
         DynamicIslandManager.shared.show(message: "Saved", duration: 3.0)
     }
 
     private func performCapture(rect: CGRect, excludeWindowIDs: [CGWindowID] = []) {
-        print("🎯 [CAPTURE] Début de la capture pour la région: \(rect)")
-        print("🚫 [CAPTURE] Excluding \(excludeWindowIDs.count) overlay windows from capture")
-
         // Vérifier que le rectangle est valide
         guard rect.width > 0 && rect.height > 0 else {
-            print("❌ [CAPTURE] Rectangle de capture invalide: \(rect)")
             DispatchQueue.main.async { [weak self] in
                 self?.showErrorNotification(error: NSError(domain: "ScreenshotService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid selection rectangle"]))
             }
@@ -217,13 +186,11 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             do {
                 // Essayer d'abord avec ScreenCaptureKit (moderne)
                 let cgImage = try await self.captureWithScreenCaptureKit(rect: rect, excludeWindowIDs: excludeWindowIDs)
-
-                print("✅ [CAPTURE] Capture ScreenCaptureKit réussie - Taille: \(cgImage.width)x\(cgImage.height)")
-                await self.handleSuccessfulCapture(cgImage: cgImage, selectionRect: rect)
+                await MainActor.run {
+                    self.handleSuccessfulCapture(cgImage: cgImage, selectionRect: rect)
+                }
 
             } catch {
-                print("❌ [CAPTURE] ScreenCaptureKit a échoué: \(error.localizedDescription)")
-
                 DispatchQueue.main.async { [weak self] in
                     self?.showErrorNotification(error: error)
                 }
@@ -237,7 +204,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     }
 
     // Gestion commune du succès
-    @MainActor
     private func handleSuccessfulCapture(cgImage: CGImage, selectionRect: CGRect) {
         // Play capture sound if enabled
         if AppSettings.shared.playSoundOnCapture {
@@ -253,7 +219,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         let nsImage = NSImage(size: selectionRect.size)
         nsImage.addRepresentation(rep)
 
-        print("📋 [CAPTURE] Copie vers le presse-papier...")
         let clipboardFilePath = self.copyToClipboard(
             image: nsImage,
             cgImage: cgImage,
@@ -264,13 +229,10 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         var filePath: String? = clipboardFilePath
         if AppSettings.shared.saveToFile {
             if filePath == nil {
-                print("💾 [CAPTURE] Sauvegarde vers fichier (préférence utilisateur)...")
                 filePath = self.saveToFileAndGetPath(
                     cgImage: cgImage,
                     pointSize: selectionRect.size
                 )
-            } else {
-                print("💾 [CAPTURE] Fichier déjà enregistré pour le clipboard, réutilisation du même chemin")
             }
         }
 
@@ -284,9 +246,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     }
 
     private func captureScreenRegion(rect: CGRect, excludeWindowIDs: [CGWindowID]) async throws -> CGImage {
-        print("🖥️ [ScreenCaptureKit] Capture région: \(rect)")
-        print("🚫 [ScreenCaptureKit] Window IDs to exclude: \(excludeWindowIDs)")
-
         // Vérification de base du rectangle
         guard rect.width > 0 && rect.height > 0 else {
             throw NSError(domain: "ScreenshotService", code: -1, userInfo: [
@@ -297,7 +256,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         do {
             // 1. Obtenir le contenu partageable
             let content = try await SCShareableContent.current
-            print("✅ [ScreenCaptureKit] \(content.displays.count) écran(s) disponible(s)")
 
             // 2. Find NSScreen that contains the selection rect
             guard let nsScreen = NSScreen.screens.first(where: { $0.frame.intersects(rect) }) else {
@@ -311,16 +269,13 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             let targetDisplay: SCDisplay
             if let matchedDisplay = content.displays.first(where: { $0.displayID == displayID }) {
                 targetDisplay = matchedDisplay
-                print("✅ [ScreenCaptureKit] Matched display ID: \(targetDisplay.displayID)")
             } else {
-                print("⚠️ [ScreenCaptureKit] Display ID \(displayID) not found, using first display")
                 guard let fallbackDisplay = content.displays.first else {
                     throw NSError(domain: "ScreenshotService", code: -3, userInfo: [
-                        NSLocalizedDescriptionKey: "No screen available"
+                        NSLocalizedDescriptionKey: "No display found"
                     ])
                 }
                 targetDisplay = fallbackDisplay
-                print("✅ [ScreenCaptureKit] Using fallback display ID: \(targetDisplay.displayID)")
             }
 
             let screenFrame = nsScreen.frame
@@ -343,25 +298,18 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             let screenBounds = CGRect(origin: .zero, size: screenFrame.size)
             var relativeRect = rectInScreenPoints
             if !screenBounds.contains(rectInScreenPoints) {
-                print("⚠️ [ScreenCaptureKit] Selection extends outside screen bounds, clipping…")
                 relativeRect = rectInScreenPoints.intersection(screenBounds)
                 guard !relativeRect.isNull else {
                     throw NSError(domain: "ScreenshotService", code: -4, userInfo: [
-                        NSLocalizedDescriptionKey: "Selection outside screen bounds"
+                        NSLocalizedDescriptionKey: "Selection is entirely outside screen bounds"
                     ])
                 }
-                print("✂️ [ScreenCaptureKit] Relative rect after clipping: \(relativeRect)")
             }
-
-            print("✅ [ScreenCaptureKit] Capturing from display ID: \(targetDisplay.displayID)")
-            print("   Global rect: \(rect) on screen frame: \(screenFrame)")
-            print("   Relative rect: \(relativeRect)")
 
             // 4. Convert window IDs to SCWindow objects for exclusion
-            let excludeWindows = content.windows.filter { window in
-                excludeWindowIDs.contains(CGWindowID(window.windowID))
+            let excludeWindows = content.windows.filter {
+                excludeWindowIDs.contains(CGWindowID($0.windowID))
             }
-            print("🚫 [ScreenCaptureKit] Found \(excludeWindows.count) overlay windows to exclude")
 
             // 5. Créer le filtre de contenu (capture le BON écran, SAUF les overlays)
             let filter = SCContentFilter(display: targetDisplay, excludingWindows: excludeWindows)
@@ -369,7 +317,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             // 6. Determine backing scale factor (Retina = 2.0, non-Retina = 1.0)
             // Use the nsScreen we already found
             let scaleFactor = nsScreen.backingScaleFactor
-            print("🔍 [ScreenCaptureKit] Backing scale factor: \(scaleFactor)x")
 
             // 7. Configuration avec résolution native (points × scale factor = pixels)
             let config = SCStreamConfiguration()
@@ -380,20 +327,15 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             config.showsCursor = false
             config.captureResolution = .best
 
-            print("⚙️ [ScreenCaptureKit] Config: \(config.width)x\(config.height) pixels (\(Int(relativeRect.width))x\(Int(relativeRect.height)) points × \(scaleFactor)), sourceRect (relative): \(config.sourceRect)")
-
             // 8. Capture avec l'API officielle
             let cgImage = try await SCScreenshotManager.captureImage(
                 contentFilter: filter,
                 configuration: config
             )
 
-            print("✅ [ScreenCaptureKit] Capture réussie: \(cgImage.width)x\(cgImage.height)")
             return cgImage
 
         } catch let error as SCStreamError {
-            print("❌ [ScreenCaptureKit] Erreur SCStream: \(error.localizedDescription)")
-
             // Gestion spécifique des erreurs ScreenCaptureKit
             switch error.code {
             case .userDeclined:
@@ -411,7 +353,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             }
 
         } catch {
-            print("❌ [ScreenCaptureKit] General error: \(error)")
             throw NSError(domain: "ScreenshotService", code: -13, userInfo: [
                 NSLocalizedDescriptionKey: "Screenshot capture failed: \(error.localizedDescription)"
             ])
@@ -422,38 +363,21 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
     /// Capture the frontmost application BEFORE showing selection window
     func capturePreviousApp() {
-        // Get the app that is currently active (before PastScreen becomes active)
         previousApp = NSWorkspace.shared.frontmostApplication
-        if let app = previousApp, let bundleID = app.bundleIdentifier {
-            let category = appCategoryMap[bundleID] ?? .unknown
-            print("📱 [DETECTION] Captured previous app: \(app.localizedName ?? "Unknown")")
-            print("   Bundle ID: \(bundleID)")
-            print("   Category: \(category)")
-
-            // If unknown, suggest adding it
-            if category == .unknown {
-                print("⚠️ [DETECTION] Unknown app! Add this bundle ID to appCategoryMap:")
-                print("   \"\(bundleID)\": .webBrowser  // or .codeEditor or .designTool")
-            }
-        } else {
-            print("⚠️ [DETECTION] Could not detect previous app")
-        }
     }
 
     /// Detect the application category based on previously captured app
     private func detectFrontmostApp() -> AppCategory {
         guard let app = previousApp,
               let bundleID = app.bundleIdentifier else {
-            print("⚠️ [CLIPBOARD] No previous app detected, using default behavior")
             return .unknown
         }
-
-        let category = appCategoryMap[bundleID] ?? .unknown
-        print("📱 [CLIPBOARD] Using previous app: \(app.localizedName ?? "Unknown") (\(bundleID)) → \(category)")
-        return category
+        return appCategoryMap[bundleID] ?? .unknown
     }
 
-    /// Copy image to clipboard with smart format detection
+    /// Copy image to clipboard - SIMPLE LOGIC
+    /// Default: Image only (works everywhere including AI agents)
+    /// Path override: Path text only (for terminals)
     @discardableResult
     private func copyToClipboard(
         image: NSImage,
@@ -463,69 +387,28 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
 
-        // Check for App Override first
-        var overrideFormat: ClipboardFormat = .auto
+        // Always save file first (for history and potential path use)
+        let filePath = saveToFileAndGetPath(cgImage: cgImage, pointSize: pointSize)
+
+        // Check for App Override
+        var usePathOnly = false
         if let bundleID = previousApp?.bundleIdentifier,
            let override = AppSettings.shared.getOverride(for: bundleID) {
-            overrideFormat = override
-            print("⚡️ [CLIPBOARD] App Override found for \(bundleID): \(override.rawValue)")
-        }
-
-        var filePath: String? = nil
-
-        // Helper to handle file saving once
-        func getSavedPath() -> String? {
-            if filePath == nil {
-                filePath = saveToFileAndGetPath(cgImage: cgImage, pointSize: pointSize)
+            if override == .path {
+                usePathOnly = true
             }
-            return filePath
         }
 
-        // Handle Strict Image Override
-        if overrideFormat == .image {
-            // FORCE IMAGE ONLY mode: Do not write any file path or URL to pasteboard.
-            // This forces apps like Zed Agent / Web Chats to paste the image content.
-            pasteboard.writeObjects([image])
-            // Still save file for history if needed, but don't put it in pasteboard
-            _ = getSavedPath()
-            print("✅ [CLIPBOARD] Image data ONLY copied (Force Image mode)")
-            return filePath
-        }
-
-        // Handle Path Only override
-        if overrideFormat == .path {
-            // FORCE PATH ONLY mode: Just the file path as string
-            if let imagePath = getSavedPath() {
+        if usePathOnly {
+            // PATH ONLY - For terminals
+            if let imagePath = filePath {
                 pasteboard.setString(imagePath, forType: .string)
-                print("✅ [CLIPBOARD] File path ONLY copied (Force Path mode): \(imagePath)")
-            } else {
-                // Fallback: write image if file save fails
-                pasteboard.writeObjects([image])
-                print("⚠️ [CLIPBOARD] File save failed, copied image data instead")
-            }
-            return filePath
-        }
-
-        // Detect if source app is a code editor/terminal
-        let isCodeEditor = (overrideFormat == .auto) && (detectFrontmostApp() == .codeEditor)
-
-        if isCodeEditor {
-            // Code Editors/Terminals: Path ONLY (for Markdown linking in Zed, VSCode, etc.)
-            if let imagePath = getSavedPath() {
-                pasteboard.setString(imagePath, forType: .string)
-                print("✅ [CLIPBOARD] Path string ONLY copied (Code Editor source)")
-            } else {
-                // Fallback: write image if file save fails
-                pasteboard.writeObjects([image])
-                print("⚠️ [CLIPBOARD] File save failed, copied image data instead")
             }
         } else {
-            // Default for all other apps: Image ONLY
-            // This covers browsers, Slack, Discord, Finder, etc.
+            // IMAGE ONLY - Default behavior (works with AI agents, browsers, etc.)
             pasteboard.writeObjects([image])
-            _ = getSavedPath()  // Still save file for history
-            print("✅ [CLIPBOARD] Image ONLY copied (Universal mode)")
         }
+
         return filePath
     }
 
@@ -578,14 +461,20 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
             try data.write(to: URL(fileURLWithPath: savePath))
             return savePath
         } catch {
-            print("❌ [CLIPBOARD] Failed to save file: \(error)")
-            return nil
+            // Fallback to Temporary Directory if main save fails (Sandbox/Permission issues)
+            let tempFolder = NSTemporaryDirectory()
+            let tempPath = (tempFolder as NSString).appendingPathComponent(filename)
+
+            do {
+                try data.write(to: URL(fileURLWithPath: tempPath))
+                return tempPath
+            } catch {
+                return nil
+            }
         }
     }
 
     private func showErrorNotification(error: Error) {
-        print("🚨 Error: \(error.localizedDescription)")
-
         // For errors, show a proper alert dialog
         DispatchQueue.main.async {
             let alert = NSAlert()

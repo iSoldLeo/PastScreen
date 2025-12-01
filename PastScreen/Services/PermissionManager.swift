@@ -53,27 +53,21 @@ class PermissionManager: ObservableObject {
     // MARK: - Permission Status Checking
 
     func checkAllPermissions() {
-        print("🔍 [PERMISSIONS] Checking all permission statuses...")
-
         checkScreenRecordingPermission()
         checkAccessibilityPermission()
         checkNotificationPermission()
-
-        logPermissionSummary()
     }
 
     func checkScreenRecordingPermission() {
         if #available(macOS 10.15, *) {
             let hasAccess = CGPreflightScreenCaptureAccess()
             screenRecordingStatus = hasAccess ? .authorized : .denied
-            print("📱 [PERMISSIONS] Screen Recording: \(screenRecordingStatus.description)")
         }
     }
 
     func checkAccessibilityPermission() {
         let hasAccess = AXIsProcessTrusted()
         accessibilityStatus = hasAccess ? .authorized : .denied
-        print("♿️ [PERMISSIONS] Accessibility: \(accessibilityStatus.description)")
     }
 
     func checkNotificationPermission() {
@@ -89,8 +83,6 @@ class PermissionManager: ObservableObject {
                 @unknown default:
                     self.notificationStatus = .restricted
                 }
-                print("🔔 [PERMISSIONS] Notifications: \(self.notificationStatus.description)")
-                self.logNotificationDiagnostics(settings)
             }
         }
     }
@@ -101,14 +93,12 @@ class PermissionManager: ObservableObject {
         let currentRetry = retryCount[type] ?? 0
 
         if currentRetry >= maxRetries {
-            print("⚠️ [PERMISSIONS] Max retries reached for \(type.rawValue)")
             showMaxRetriesAlert(for: type)
             completion(false)
             return
         }
 
         retryCount[type] = currentRetry + 1
-        print("🔄 [PERMISSIONS] Requesting \(type.rawValue) (attempt \(currentRetry + 1)/\(maxRetries))...")
 
         switch type {
         case .screenRecording:
@@ -155,67 +145,12 @@ class PermissionManager: ObservableObject {
 
     private func requestNotifications(completion: @escaping (Bool) -> Void) {
         let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             DispatchQueue.main.async {
-                if let error = error {
-                    print("❌ [PERMISSIONS] Notification auth error: \(error)")
-                }
                 self.checkNotificationPermission()
                 completion(granted)
             }
         }
-    }
-
-    // MARK: - Diagnostics
-
-    private func logPermissionSummary() {
-        print("""
-
-        ═══════════════════════════════════════
-        📊 PERMISSION STATUS SUMMARY
-        ═══════════════════════════════════════
-        📱 Screen Recording: \(screenRecordingStatus.description)
-        ♿️ Accessibility:     \(accessibilityStatus.description)
-        🔔 Notifications:     \(notificationStatus.description)
-        ═══════════════════════════════════════
-
-        """)
-    }
-
-    private func logNotificationDiagnostics(_ settings: UNNotificationSettings) {
-        let authStatus: String
-        switch settings.authorizationStatus {
-        case .authorized: authStatus = "Authorized"
-        case .denied: authStatus = "Denied"
-        case .notDetermined: authStatus = "Not Determined"
-        case .provisional: authStatus = "Provisional"
-        case .ephemeral: authStatus = "Ephemeral"
-        @unknown default: authStatus = "Unknown"
-        }
-
-        print("""
-
-        ═══════════════════════════════════════
-        🔔 NOTIFICATION DIAGNOSTICS
-        ═══════════════════════════════════════
-        Authorization Status:  \(authStatus) (\(settings.authorizationStatus.rawValue))
-        Alert Setting:         \(settings.alertSetting.rawValue)
-        Badge Setting:         \(settings.badgeSetting.rawValue)
-        Sound Setting:         \(settings.soundSetting.rawValue)
-        Notification Center:   \(settings.notificationCenterSetting.rawValue)
-        Lock Screen:           \(settings.lockScreenSetting.rawValue)
-
-        🔍 ACTIVATION POLICY
-        Current Policy:        \(NSApp.activationPolicy().rawValue)
-        LSUIElement in Info:   \(Bundle.main.object(forInfoDictionaryKey: "LSUIElement") != nil ? "YES" : "NO")
-
-        💡 KNOWN ISSUE
-        Apps with LSUIElement=true or .accessory policy
-        are filtered by macOS from showing UNUserNotifications.
-        This is a macOS design limitation, not an app bug.
-        ═══════════════════════════════════════
-
-        """)
     }
 
     // MARK: - User Feedback
@@ -288,7 +223,6 @@ class PermissionManager: ObservableObject {
 
     func resetRetryCounters() {
         retryCount.removeAll()
-        print("🔄 [PERMISSIONS] Retry counters reset")
     }
 
     // MARK: - Convenience Methods

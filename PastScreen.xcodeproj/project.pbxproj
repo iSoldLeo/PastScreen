@@ -6,30 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
-		160D2D5F2ECCB91300A25E82 /* PastScreen AppStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PastScreen AppStore.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		160D2D5F2ECCB91300A25E82 /* PastScreen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PastScreen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		160D2D612ECCB91300A25E82 /* PastScreen copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PastScreen copy-Info.plist"; path = "/Users/ecologni/Desktop/Clemadel/PastScreen/PastScreen copy-Info.plist"; sourceTree = "<absolute>"; };
-		16C553412EB8AF3F008745D0 /* PastScreen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PastScreen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		160D2D602ECCB91300A25E82 /* Exceptions for "PastScreen" folder in "PastScreen AppStore" target */ = {
+		160D2D602ECCB91300A25E82 /* Exceptions for "PastScreen" folder in "PastScreen" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"Info-AppStore.plist",
 				Info.plist,
 			);
-			target = 160D2D552ECCB91300A25E82 /* PastScreen AppStore */;
-		};
-		168B20442ED1178200CD85F2 /* Exceptions for "PastScreen" folder in "PastScreen" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 16C553402EB8AF3F008745D0 /* PastScreen */;
+			target = 160D2D552ECCB91300A25E82 /* PastScreen */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -37,8 +26,7 @@
 		16C553432EB8AF3F008745D0 /* PastScreen */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				168B20442ED1178200CD85F2 /* Exceptions for "PastScreen" folder in "PastScreen" target */,
-				160D2D602ECCB91300A25E82 /* Exceptions for "PastScreen" folder in "PastScreen AppStore" target */,
+				160D2D602ECCB91300A25E82 /* Exceptions for "PastScreen" folder in "PastScreen" target */,
 			);
 			path = PastScreen;
 			sourceTree = "<group>";
@@ -47,13 +35,6 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		160D2D592ECCB91300A25E82 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		16C5533E2EB8AF3F008745D0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -75,8 +56,7 @@
 		16C553422EB8AF3F008745D0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				16C553412EB8AF3F008745D0 /* PastScreen.app */,
-				160D2D5F2ECCB91300A25E82 /* PastScreen AppStore.app */,
+				160D2D5F2ECCB91300A25E82 /* PastScreen.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,9 +64,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		160D2D552ECCB91300A25E82 /* PastScreen AppStore */ = {
+		160D2D552ECCB91300A25E82 /* PastScreen */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 160D2D5C2ECCB91300A25E82 /* Build configuration list for PBXNativeTarget "PastScreen AppStore" */;
+			buildConfigurationList = 160D2D5C2ECCB91300A25E82 /* Build configuration list for PBXNativeTarget "PastScreen" */;
 			buildPhases = (
 				160D2D582ECCB91300A25E82 /* Sources */,
 				160D2D592ECCB91300A25E82 /* Frameworks */,
@@ -99,33 +79,11 @@
 			fileSystemSynchronizedGroups = (
 				16C553432EB8AF3F008745D0 /* PastScreen */,
 			);
-			name = "PastScreen AppStore";
-			packageProductDependencies = (
-			);
-			productName = PastScreen;
-			productReference = 160D2D5F2ECCB91300A25E82 /* PastScreen AppStore.app */;
-			productType = "com.apple.product-type.application";
-		};
-		16C553402EB8AF3F008745D0 /* PastScreen */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 16C5534C2EB8AF3F008745D0 /* Build configuration list for PBXNativeTarget "PastScreen" */;
-			buildPhases = (
-				16C5533D2EB8AF3F008745D0 /* Sources */,
-				16C5533E2EB8AF3F008745D0 /* Frameworks */,
-				16C5533F2EB8AF3F008745D0 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				16C553432EB8AF3F008745D0 /* PastScreen */,
-			);
 			name = PastScreen;
 			packageProductDependencies = (
 			);
 			productName = PastScreen;
-			productReference = 16C553412EB8AF3F008745D0 /* PastScreen.app */;
+			productReference = 160D2D5F2ECCB91300A25E82 /* PastScreen.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -137,11 +95,6 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2610;
-				TargetAttributes = {
-					16C553402EB8AF3F008745D0 = {
-						CreatedOnToolsVersion = 26.0.1;
-					};
-				};
 			};
 			buildConfigurationList = 16C5533C2EB8AF3F008745D0 /* Build configuration list for PBXProject "PastScreen" */;
 			developmentRegion = en;
@@ -163,8 +116,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				16C553402EB8AF3F008745D0 /* PastScreen */,
-				160D2D552ECCB91300A25E82 /* PastScreen AppStore */,
+				160D2D552ECCB91300A25E82 /* PastScreen */,
 			);
 		};
 /* End PBXProject section */
@@ -177,24 +129,10 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		16C5533F2EB8AF3F008745D0 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		160D2D582ECCB91300A25E82 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		16C5533D2EB8AF3F008745D0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -422,100 +360,10 @@
 			};
 			name = Release;
 		};
-		16C5534D2EB8AF3F008745D0 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = PastScreen.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 15;
-				DEAD_CODE_STRIPPING = YES;
-				ENABLE_APP_SANDBOX = NO;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
-				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = PastScreen/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 2.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.augiefra.PastScreen;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		16C5534E2EB8AF3F008745D0 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = PastScreen.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 15;
-				DEAD_CODE_STRIPPING = YES;
-				ENABLE_APP_SANDBOX = NO;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
-				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = PastScreen/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 2.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.augiefra.PastScreen;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		160D2D5C2ECCB91300A25E82 /* Build configuration list for PBXNativeTarget "PastScreen AppStore" */ = {
+		160D2D5C2ECCB91300A25E82 /* Build configuration list for PBXNativeTarget "PastScreen" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				160D2D5D2ECCB91300A25E82 /* Debug */,
@@ -529,15 +377,6 @@
 			buildConfigurations = (
 				16C5534A2EB8AF3F008745D0 /* Debug */,
 				16C5534B2EB8AF3F008745D0 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		16C5534C2EB8AF3F008745D0 /* Build configuration list for PBXNativeTarget "PastScreen" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				16C5534D2EB8AF3F008745D0 /* Debug */,
-				16C5534E2EB8AF3F008745D0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

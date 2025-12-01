@@ -101,11 +101,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             if let icon = NSImage(named: "MenuBarIcon") {
                 icon.isTemplate = true  // Adaptation automatique au thème clair/sombre
                 button.image = icon
-                print("✅ Custom MenuBarIcon loaded from Assets")
             } else {
                 // Fallback vers SF Symbol
                 button.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "PastScreen")
-                print("⚠️ Fallback: camera.viewfinder SF Symbol")
             }
 
             button.action = #selector(handleButtonClick)
@@ -171,7 +169,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     @objc func handleScreenshotCaptured(_ notification: Notification) {
         if let path = notification.userInfo?["filePath"] as? String {
             lastScreenshotPath = path
-            print("📝 [APP] Dernière capture mise à jour: \(path)")
         }
     }
 
@@ -258,8 +255,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         quitItem.target = self
         menu.addItem(quitItem)
 
-        print("✅ Menu créé avec succès avec \(menu.items.count) éléments")
-
         return menu
     }
 
@@ -276,21 +271,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     @objc func handleHotKeyPressed() {
-        print("⚡️ [APP] Hotkey notification received, triggering capture.")
         requestScreenRecordingIfNeeded { [weak self] in
             self?.performAreaCapture(source: .hotkey)
         }
     }
 
     @objc func revealLastScreenshot() {
-        guard let path = lastScreenshotPath else {
-            print("⚠️ Aucune capture récente")
-            return
-        }
+        guard let path = lastScreenshotPath else { return }
 
         // Verify file still exists
         guard FileManager.default.fileExists(atPath: path) else {
-            print("⚠️ Fichier introuvable: \(path)")
             // Reset lastScreenshotPath since file doesn't exist
             lastScreenshotPath = nil
             // Show alert
@@ -302,22 +292,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             return
         }
 
-        print("📁 [MENU] Ouverture du Finder: \(path)")
         NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
     }
 
     @objc func copyFromHistory(_ sender: NSMenuItem) {
         guard let path = sender.representedObject as? String else { return }
 
-        guard FileManager.default.fileExists(atPath: path) else {
-            print("⚠️ [HISTORY] File not found: \(path)")
-            return
-        }
+        guard FileManager.default.fileExists(atPath: path) else { return }
 
-        guard let image = NSImage(contentsOfFile: path) else {
-            print("⚠️ [HISTORY] Failed to load image from: \(path)")
-            return
-        }
+        guard let image = NSImage(contentsOfFile: path) else { return }
 
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -409,10 +392,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - UNUserNotificationCenterDelegate
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        print("🔔 [DELEGATE] willPresent appelé - notification à afficher")
-        print("🔔 [DELEGATE] Titre: \(notification.request.content.title)")
-        print("🔔 [DELEGATE] Body: \(notification.request.content.body)")
-
         if #available(macOS 12.0, *) {
             completionHandler([.banner, .list, .sound])
         } else {
@@ -422,7 +401,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         if let filePath = response.notification.request.content.userInfo["filePath"] as? String {
-            print("🖱️ [DELEGATE] Clic sur notification - ouverture du fichier: \(filePath)")
             NSWorkspace.shared.selectFile(filePath, inFileViewerRootedAtPath: "")
         }
 
@@ -445,27 +423,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func requestNotificationPermission() {
-        print("🔔 [APP] Requesting notification permission...")
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if let error = error {
-                print("❌ [APP] Notification permission error: \(error)")
-            }
-            print(granted ? "✅ [APP] Notification permission granted" : "⚠️ [APP] Notification permission denied")
-        }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
     }
 
 #if DEBUG
     func testNotification() {
-        print("🧪 [TEST] Envoi d'une notification de test au démarrage...")
-
         let content = UNMutableNotificationContent()
         content.title = "PastScreen - Test"
         content.body = "App started successfully"
         content.sound = .default
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
-
-        print("🧪 [TEST] Notification de test envoyée")
     }
 #endif
 
@@ -474,37 +442,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // This prevents popup chaos on first launch
 
     private func requestAllPermissions() {
-        print("🔐 [APP] Requesting all necessary permissions...")
-
         // Check current status of all permissions
         permissionManager.checkAllPermissions()
 
         // Request Screen Recording permission
-        permissionManager.requestPermission(.screenRecording) { granted in
-            if !granted {
-                print("⚠️ [APP] Screen Recording not authorized")
-            }
-        }
+        permissionManager.requestPermission(.screenRecording) { _ in }
 
         // Request Accessibility permission (for global hotkeys)
-        permissionManager.requestPermission(.accessibility) { granted in
-            if !granted {
-                print("⚠️ [APP] Accessibility not authorized - global hotkeys may not work")
-            }
-        }
+        permissionManager.requestPermission(.accessibility) { _ in }
 
         // Check if any permissions are missing after 2 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             guard let self = self else { return }
             let missing = self.permissionManager.getMissingPermissions()
             if !missing.isEmpty {
-                print("⚠️ [APP] Missing permissions: \(missing.map { $0.rawValue }.joined(separator: ", "))")
                 // Only show alert if Screen Recording is missing (critical)
                 if missing.contains(.screenRecording) {
                     self.permissionManager.showPermissionAlert(for: missing)
                 }
-            } else {
-                print("✅ [APP] All permissions granted")
             }
         }
     }
@@ -529,7 +484,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     func performAreaCapture(source: CaptureTrigger = .menuBar) {
         guard let screenshotService = screenshotService else { return }
-        print("🚀 [CAPTURE] Demande de capture area depuis: \(source.rawValue)")
         screenshotService.capturePreviousApp()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak screenshotService] in
             screenshotService?.captureScreenshot()
@@ -538,7 +492,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     func performFullScreenCapture(source: CaptureTrigger = .menuBar) {
         guard let screenshotService = screenshotService else { return }
-        print("🚀 [CAPTURE] Demande de capture plein écran depuis: \(source.rawValue)")
         screenshotService.capturePreviousApp()
         screenshotService.captureFullScreen()
     }
@@ -557,20 +510,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     func updateActivationPolicy() {
         let showInDock = settings.showInDock
-        let currentPolicy = NSApp.activationPolicy()
-
-        print("🔧 [DOCK] updateActivationPolicy() - showInDock: \(showInDock), currentPolicy: \(currentPolicy.rawValue)")
 
         if showInDock {
             NSApp.setActivationPolicy(.regular)
-            print("✅ [DOCK] Mode normal activé (icône Dock + menu bar)")
         } else {
             NSApp.setActivationPolicy(.accessory)
-            print("✅ [DOCK] Mode menu bar uniquement activé (pas de Dock)")
         }
-
-        let newPolicy = NSApp.activationPolicy()
-        print("🔧 [DOCK] Nouvelle policy: \(newPolicy.rawValue)")
     }
 }
 

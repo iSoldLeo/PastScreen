@@ -124,6 +124,7 @@ class AppSettings: ObservableObject {
         self.globalHotkeyEnabled = UserDefaults.standard.object(forKey: "globalHotkeyEnabled") as? Bool ?? true
         self.showInDock = UserDefaults.standard.object(forKey: "showInDock") as? Bool ?? true
         self.launchAtLogin = UserDefaults.standard.object(forKey: "launchAtLogin") as? Bool ?? false  // Default: disabled
+
         self.captureHistory = UserDefaults.standard.stringArray(forKey: "captureHistory") ?? []
 
         let seq = UserDefaults.standard.integer(forKey: "screenshotSequence")
@@ -165,7 +166,7 @@ class AppSettings: ObservableObject {
                     self.saveFolderBookmark = bookmarkData
                     startAccessing(url: url)
                 } catch {
-                    print("❌ [SANDBOX] Failed to create bookmark: \(error)")
+                    // Bookmark creation failed silently
                 }
 
                 return url.path + "/"
@@ -182,22 +183,17 @@ class AppSettings: ObservableObject {
             let url = try URL(resolvingBookmarkData: bookmarkData, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &isStale)
 
             if isStale {
-                print("⚠️ [SANDBOX] Bookmark is stale, need to recreate")
-                // We should re-request, but for now just try to access
+                // Bookmark is stale, may need to recreate
             }
 
             startAccessing(url: url)
         } catch {
-            print("❌ [SANDBOX] Failed to resolve bookmark: \(error)")
+            // Failed to resolve bookmark
         }
     }
 
     private func startAccessing(url: URL) {
-        if url.startAccessingSecurityScopedResource() {
-            print("✅ [SANDBOX] Access granted to: \(url.path)")
-        } else {
-            print("❌ [SANDBOX] Failed to access: \(url.path)")
-        }
+        _ = url.startAccessingSecurityScopedResource()
     }
 
     func clearSaveFolder() {
