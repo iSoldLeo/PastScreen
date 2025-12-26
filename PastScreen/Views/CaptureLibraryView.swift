@@ -9,80 +9,6 @@ import SwiftUI
 import AppKit
 import Combine
 
-final class CaptureLibraryWindow: NSWindow {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-}
-
-final class CaptureLibraryManager: NSObject, NSWindowDelegate {
-    static let shared = CaptureLibraryManager()
-
-    private var window: CaptureLibraryWindow?
-    private var hostingController: NSHostingController<CaptureLibraryRootView>?
-
-    func show() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-
-            CaptureLibrary.shared.bootstrapIfNeeded()
-
-            if let window = self.window {
-                window.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
-                return
-            }
-
-            let view = CaptureLibraryRootView { [weak self] in
-                self?.dismiss()
-            }
-
-            let host = NSHostingController(rootView: view)
-            self.hostingController = host
-
-            let screenFrame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
-                ?? NSRect(x: 0, y: 0, width: 1400, height: 900)
-            let width = min(1320, max(980, screenFrame.width * 0.82))
-            let height = min(920, max(740, screenFrame.height * 0.82))
-
-            let window = CaptureLibraryWindow(
-                contentRect: NSRect(x: 0, y: 0, width: width, height: height),
-                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-
-            window.title = NSLocalizedString("library.window.title", value: "素材库", comment: "")
-            window.titleVisibility = .hidden
-            window.titlebarAppearsTransparent = true
-            window.isMovableByWindowBackground = true
-            window.isReleasedWhenClosed = false
-            window.minSize = NSSize(width: 980, height: 720)
-            window.setFrameAutosaveName("CaptureLibraryWindow")
-            window.contentViewController = host
-            window.center()
-            window.delegate = self
-            window.makeKeyAndOrderFront(nil)
-
-            self.window = window
-            NSApp.activate(ignoringOtherApps: true)
-        }
-    }
-
-    func dismiss() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.window?.close()
-            self.window = nil
-            self.hostingController = nil
-        }
-    }
-
-    func windowWillClose(_ notification: Notification) {
-        window = nil
-        hostingController = nil
-    }
-}
-
 @MainActor
 final class CaptureLibraryViewModel: ObservableObject {
     enum PresentationMode: Equatable {
@@ -415,17 +341,10 @@ final class CaptureLibraryViewModel: ObservableObject {
     }
 }
 
-private struct CaptureLibraryRootView: View {
+struct CaptureLibraryRootView: View {
     @StateObject private var model = CaptureLibraryViewModel()
-    @ObservedObject private var settings = AppSettings.shared
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @EnvironmentObject var settings: AppSettings
     @AppStorage("captureLibrary.showUnknownAppGroup") private var showUnknownAppGroup: Bool = true
-
-    let onDismiss: () -> Void
-
-    init(onDismiss: @escaping () -> Void) {
-        self.onDismiss = onDismiss
-    }
 
     private var filteredAppGroups: [CaptureLibraryAppGroup] {
         guard !showUnknownAppGroup else { return model.appGroups }
@@ -440,39 +359,27 @@ private struct CaptureLibraryRootView: View {
         return bundleID.isEmpty
     }
 
-    private var chromeBackgroundStyle: AnyShapeStyle {
-        if reduceTransparency {
-            return AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
-        }
-        return AnyShapeStyle(.ultraThinMaterial)
-    }
-
     var body: some View {
         Group {
             switch model.presentationMode {
             case .browse:
                 browseView
             case .searchResults:
-                searchResultsGrid
+                searchResultsList
             case .searchDetail:
                 searchDetailView
             }
         }
-        .searchable(
-            text: $model.searchText,
-            placement: .toolbar,
-            prompt: Text(NSLocalizedString("library.search.prompt", value: "搜索", comment: ""))
-        )
-        .background {
-            Rectangle().fill(chromeBackgroundStyle)
-        }
-        .toolbarBackground(chromeBackgroundStyle, for: .windowToolbar)
-        .toolbarBackground(.visible, for: .windowToolbar)
-        .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                if model.presentationMode == .searchDetail {
-                    Button {
-                        model.backToSearchResults()
+            .searchable(
+                text: $model.searchText,
+                placement: .toolbar,
+                prompt: Text(NSLocalizedString("library.search.prompt", value: "搜索", comment: ""))
+            )
+            .toolbar {
+                ToolbarItemGroup(placement: .navigation) {
+                    if model.presentationMode == .searchDetail {
+                        Button {
+                            model.backToSearchResults()
                     } label: {
                         Image(systemName: "chevron.left.circle.fill")
                     }
@@ -516,6 +423,13 @@ private struct CaptureLibraryRootView: View {
         .onChange(of: model.sort) { _, _ in
             model.scheduleReload(debounce: false)
         }
+        .onChange(of: model.selectedItemID) { _, newValue in
+            if model.presentationMode == .searchResults, let newValue {
+                model.enterSearchDetail(itemID: newValue)
+            }
+        }
+        .focusedSceneValue(\.captureLibrarySelection, $model.selectedItemID)
+        .focusedSceneValue(\.captureLibraryActions, actions)
     }
 
     private var browseView: some View {
@@ -623,94 +537,23 @@ private struct CaptureLibraryRootView: View {
         }
     }
 
-	    private var searchResultsGrid: some View {
-	        Group {
-	            if model.isLoading {
-	                VStack(spacing: 12) {
-	                    ProgressView()
-	                        .progressViewStyle(.linear)
-	                        .padding(.horizontal, 16)
-	                        .padding(.top, 12)
-	                    Spacer(minLength: 0)
-	                }
-	            } else {
-	                ScrollView {
-	                    LazyVGrid(
-	                        columns: [
-	                            GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 12)
-	                        ],
-	                        alignment: .leading,
-	                        spacing: 12
-	                    ) {
-	                        ForEach(model.items) { item in
-	                            CaptureLibraryGridItemView(
-	                                url: model.thumbURL(for: item),
-	                                isPinned: item.isPinned,
-	                                isSelected: model.selectedItemID == item.id
-	                            )
-	                            .onTapGesture {
-	                                model.enterSearchDetail(itemID: item.id)
-	                            }
-	                            .contextMenu {
-	                                Button {
-	                                    model.copyImage(item)
-	                                } label: {
-	                                    Label(NSLocalizedString("library.action.copy_image", value: "复制图片", comment: ""), systemImage: "doc.on.doc")
-	                                }
-
-	                                Button {
-	                                    model.copyPath(item)
-	                                } label: {
-	                                    Label(NSLocalizedString("library.action.copy_path", value: "复制路径", comment: ""), systemImage: "link")
-	                                }
-
-	                                Button {
-	                                    model.reveal(item)
-	                                } label: {
-	                                    Label(NSLocalizedString("library.action.reveal", value: "在 Finder 显示", comment: ""), systemImage: "folder")
-	                                }
-
-	                                Divider()
-
-	                                Button {
-	                                    model.togglePinned(item)
-	                                } label: {
-	                                    Label(
-	                                        item.isPinned
-	                                            ? NSLocalizedString("library.action.unpin", value: "取消置顶", comment: "")
-	                                            : NSLocalizedString("library.action.pin", value: "置顶", comment: ""),
-	                                        systemImage: item.isPinned ? "pin.slash" : "pin"
-	                                    )
-	                                }
-
-	                                Divider()
-
-	                                Button(role: .destructive) {
-	                                    model.delete(item)
-	                                } label: {
-	                                    Label(NSLocalizedString("library.action.delete", value: "删除", comment: ""), systemImage: "trash")
-	                                }
-	                            }
-	                        }
-	                    }
-	                    .padding(16)
-	                }
-	            }
-	        }
-	    }
-
-	    private var browseList: some View {
-	        ScrollView {
-	            LazyVStack(alignment: .leading, spacing: 12) {
-	                ForEach(model.items) { item in
-	                    CaptureLibraryListRowView(
-	                        url: model.thumbURL(for: item),
-	                        isPinned: item.isPinned,
-	                        isSelected: model.selectedItemID == item.id
-	                    )
-                    .onTapGesture {
-                        model.selectedItemID = item.id
-                    }
+    private var searchResultsList: some View {
+        List(selection: $model.selectedItemID) {
+            if model.isLoading {
+                HStack {
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                    Text(NSLocalizedString("library.loading", value: "加载中…", comment: ""))
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                ForEach(model.items) { item in
+                    CaptureLibraryGridItemView(
+                        url: model.thumbURL(for: item),
+                        isPinned: item.isPinned,
+                        isSelected: model.selectedItemID == item.id
+                    )
+                    .tag(item.id)
                     .contextMenu {
                         Button {
                             model.copyImage(item)
@@ -751,19 +594,86 @@ private struct CaptureLibraryRootView: View {
                             Label(NSLocalizedString("library.action.delete", value: "删除", comment: ""), systemImage: "trash")
                         }
                     }
+                    .listRowSeparator(.hidden)
                 }
             }
-            .padding(16)
         }
+        .listStyle(.inset)
     }
 
-	    private var searchDetailView: some View {
-	        HSplitView {
-	            browseList
-	                .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
-	            inspector
-	        }
-	    }
+    private var browseList: some View {
+        List(selection: $model.selectedItemID) {
+            ForEach(model.items) { item in
+                CaptureLibraryListRowView(
+                    url: model.thumbURL(for: item),
+                    isPinned: item.isPinned,
+                    isSelected: model.selectedItemID == item.id
+                )
+                .tag(item.id)
+                .contextMenu {
+                    Button {
+                        model.copyImage(item)
+                    } label: {
+                        Label(NSLocalizedString("library.action.copy_image", value: "复制图片", comment: ""), systemImage: "doc.on.doc")
+                    }
+
+                    Button {
+                        model.copyPath(item)
+                    } label: {
+                        Label(NSLocalizedString("library.action.copy_path", value: "复制路径", comment: ""), systemImage: "link")
+                    }
+
+                    Button {
+                        model.reveal(item)
+                    } label: {
+                        Label(NSLocalizedString("library.action.reveal", value: "在 Finder 显示", comment: ""), systemImage: "folder")
+                    }
+
+                    Divider()
+
+                    Button {
+                        model.togglePinned(item)
+                    } label: {
+                        Label(
+                            item.isPinned
+                                ? NSLocalizedString("library.action.unpin", value: "取消置顶", comment: "")
+                                : NSLocalizedString("library.action.pin", value: "置顶", comment: ""),
+                            systemImage: item.isPinned ? "pin.slash" : "pin"
+                        )
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        model.delete(item)
+                    } label: {
+                        Label(NSLocalizedString("library.action.delete", value: "删除", comment: ""), systemImage: "trash")
+                    }
+                }
+            }
+        }
+        .listStyle(.inset)
+    }
+
+    private var searchDetailView: some View {
+        NavigationSplitView {
+            searchResultsList
+                .frame(minWidth: 200, idealWidth: 240, maxWidth: 280)
+        } detail: {
+            inspector
+        }
+        .navigationSplitViewStyle(.balanced)
+    }
+
+    private var actions: CaptureLibraryActions {
+        CaptureLibraryActions(
+            copyImage: { if let item = model.selectedItem { model.copyImage(item) } },
+            copyPath: { if let item = model.selectedItem { model.copyPath(item) } },
+            reveal: { if let item = model.selectedItem { model.reveal(item) } },
+            togglePin: { if let item = model.selectedItem { model.togglePinned(item) } },
+            delete: { if let item = model.selectedItem { model.delete(item) } }
+        )
+    }
 
     private var inspector: some View {
         ScrollView {
@@ -801,6 +711,34 @@ private struct CaptureLibraryRootView: View {
             .padding(16)
         }
     }
+}
+
+private struct CaptureLibrarySelectionKey: FocusedValueKey {
+    typealias Value = Binding<UUID?>
+}
+
+private struct CaptureLibraryActionsKey: FocusedValueKey {
+    typealias Value = CaptureLibraryActions
+}
+
+extension FocusedValues {
+    var captureLibrarySelection: Binding<UUID?>? {
+        get { self[CaptureLibrarySelectionKey.self] }
+        set { self[CaptureLibrarySelectionKey.self] = newValue }
+    }
+
+    var captureLibraryActions: CaptureLibraryActions? {
+        get { self[CaptureLibraryActionsKey.self] }
+        set { self[CaptureLibraryActionsKey.self] = newValue }
+    }
+}
+
+struct CaptureLibraryActions {
+    let copyImage: () -> Void
+    let copyPath: () -> Void
+    let reveal: () -> Void
+    let togglePin: () -> Void
+    let delete: () -> Void
 }
 
 private struct CaptureLibraryListRowView: View {
@@ -890,6 +828,63 @@ private struct CaptureLibraryGridItemView: View {
             }.value
         }
     }
+}
+
+struct CaptureLibraryCommands: Commands {
+    @FocusedValue(\.captureLibrarySelection) private var selectedID
+    @FocusedValue(\.captureLibraryActions) private var actions
+
+    var body: some Commands {
+        CommandMenu(NSLocalizedString("library.menu.title", value: "素材库", comment: "")) {
+            Button {
+                actions?.copyImage()
+            } label: {
+                Label(NSLocalizedString("library.action.copy_image", value: "复制图片", comment: ""), systemImage: "doc.on.doc")
+            }
+            .keyboardShortcut("c", modifiers: [.command, .shift])
+            .disabled(actions == nil || selectedID == nil)
+
+            Button {
+                actions?.copyPath()
+            } label: {
+                Label(NSLocalizedString("library.action.copy_path", value: "复制路径", comment: ""), systemImage: "link")
+            }
+            .keyboardShortcut("c", modifiers: [.command, .option])
+            .disabled(actions == nil || selectedID == nil)
+
+            Button {
+                actions?.reveal()
+            } label: {
+                Label(NSLocalizedString("library.action.reveal", value: "在 Finder 显示", comment: ""), systemImage: "folder")
+            }
+            .keyboardShortcut("r", modifiers: [.command, .shift])
+            .disabled(actions == nil || selectedID == nil)
+
+            Divider()
+
+            Button {
+                actions?.togglePin()
+            } label: {
+                Label(NSLocalizedString("library.action.pin", value: "置顶", comment: ""), systemImage: "pin")
+            }
+            .keyboardShortcut("p", modifiers: [.command, .shift])
+            .disabled(actions == nil || selectedID == nil)
+
+            Button(role: .destructive) {
+                actions?.delete()
+            } label: {
+                Label(NSLocalizedString("library.action.delete", value: "删除", comment: ""), systemImage: "trash")
+            }
+            .keyboardShortcut(.delete, modifiers: [])
+            .disabled(actions == nil || selectedID == nil)
+        }
+    }
+}
+
+#Preview("Capture Library") {
+    CaptureLibraryRootView()
+        .environmentObject(AppSettings.shared)
+        .frame(width: 1100, height: 820)
 }
 
 private struct CaptureLibraryInspectorView: View {

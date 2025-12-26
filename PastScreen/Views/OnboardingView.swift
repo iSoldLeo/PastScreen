@@ -8,176 +8,7 @@
 import SwiftUI
 import AppKit
 import ScreenCaptureKit
-
-// MARK: - OnboardingWindow (Custom NSWindow that can become key)
-
-class OnboardingWindow: NSWindow {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-}
-
-// MARK: - OnboardingManager
-
-class OnboardingManager {
-    static let shared = OnboardingManager()
-
-    private var onboardingWindow: OnboardingWindow?
-    private var hostingController: NSHostingController<OnboardingContentView>?
-    private let hasSeenOnboardingKey = "hasSeenOnboarding"
-
-    var hasSeenOnboarding: Bool {
-        get {
-            let value = UserDefaults.standard.bool(forKey: hasSeenOnboardingKey)
-            NSLog("🔑 [ONBOARDING] hasSeenOnboarding getter called, returning: \(value)")
-            return value
-        }
-        set {
-            NSLog("🔑 [ONBOARDING] hasSeenOnboarding setter called with: \(newValue)")
-            UserDefaults.standard.set(newValue, forKey: hasSeenOnboardingKey)
-        }
-    }
-
-    func showIfNeeded() {
-        NSLog("🔍 [ONBOARDING] showIfNeeded called, hasSeenOnboarding = \(hasSeenOnboarding)")
-        guard !hasSeenOnboarding else {
-            NSLog("ℹ️ [ONBOARDING] Already seen, skipping")
-            return
-        }
-        NSLog("✅ [ONBOARDING] First launch detected, calling show()")
-        show()
-    }
-
-    func show() {
-        NSLog("📢 [ONBOARDING] show() method called!")
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else {
-                NSLog("⚠️ [ONBOARDING] self is nil in show()")
-                return
-            }
-
-            NSLog("✨ [ONBOARDING] Showing welcome screen")
-
-            // Dismiss if already showing
-            if self.onboardingWindow != nil {
-                NSLog("🗑️ [ONBOARDING] Existing window found, dismissing first")
-                self.dismiss()
-                // Wait for dismissal to complete before showing new window
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    self.show()
-                }
-                return
-            }
-
-            // Create onboarding view
-            NSLog("🏗️ [ONBOARDING] Creating onboarding view...")
-            let onboardingView = OnboardingContentView(
-                onDismiss: { [weak self] in
-                    self?.hasSeenOnboarding = true
-                    self?.dismiss()
-                }
-            )
-
-            let hostingController = NSHostingController(rootView: onboardingView)
-            self.hostingController = hostingController
-            NSLog("✅ [ONBOARDING] Hosting controller created")
-
-            // Calculate window size and position (centered)
-            let windowWidth: CGFloat = 620
-            let windowHeight: CGFloat = 800
-
-            guard let screen = NSScreen.main else {
-                NSLog("❌ [ONBOARDING] No main screen found")
-                return
-            }
-
-            let screenFrame = screen.visibleFrame
-            let windowRect = NSRect(
-                x: screenFrame.midX - windowWidth / 2,
-                y: screenFrame.midY - windowHeight / 2,
-                width: windowWidth,
-                height: windowHeight
-            )
-            NSLog("📐 [ONBOARDING] Window rect: \(windowRect)")
-
-            // Create floating window with rounded corners
-            NSLog("🪟 [ONBOARDING] Creating OnboardingWindow...")
-            let window = OnboardingWindow(
-                contentRect: windowRect,
-                styleMask: [.borderless, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-            NSLog("✅ [ONBOARDING] Window created")
-
-            window.contentViewController = hostingController
-            window.backgroundColor = .clear
-            window.isOpaque = false
-            window.hasShadow = true
-            window.level = .floating
-            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-            window.isMovableByWindowBackground = true
-            NSLog("⚙️ [ONBOARDING] Window properties configured")
-
-            // Liquid glass rounded corners
-            if let contentView = window.contentView {
-                contentView.wantsLayer = true
-                contentView.layer?.cornerRadius = 20
-                contentView.layer?.masksToBounds = true
-                contentView.layer?.cornerCurve = .continuous  // Apple's smooth corners
-                NSLog("🎨 [ONBOARDING] Content view styled with rounded corners")
-            }
-
-            self.onboardingWindow = window
-            NSLog("💾 [ONBOARDING] Window reference stored")
-
-            // Show with animation
-            window.alphaValue = 0
-            NSLog("👁️ [ONBOARDING] Calling makeKeyAndOrderFront...")
-            window.makeKeyAndOrderFront(nil)
-            NSLog("📢 [ONBOARDING] Calling NSApp.activate...")
-            NSApp.activate(ignoringOtherApps: true)
-            NSLog("🎬 [ONBOARDING] Starting fade-in animation...")
-
-            NSAnimationContext.runAnimationGroup({ context in
-                context.duration = 0.4
-                window.animator().alphaValue = 1.0
-            }, completionHandler: {
-                NSLog("✅ [ONBOARDING] Window displayed and animation complete!")
-            })
-        }
-    }
-
-    func dismiss() {
-        NSLog("🗑️ [ONBOARDING] Dismiss called")
-
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self, let window = self.onboardingWindow else {
-                NSLog("⚠️ [ONBOARDING] No window to dismiss")
-                return
-            }
-
-            NSLog("🗑️ [ONBOARDING] Closing window...")
-
-            // Fade out animation
-            NSAnimationContext.runAnimationGroup({ context in
-                context.duration = 0.3
-                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                window.animator().alphaValue = 0.0
-            }, completionHandler: {
-                // Delayed cleanup to avoid release issues
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                    window.orderOut(nil)
-
-                    // Clear references
-                    self?.hostingController = nil
-                    self?.onboardingWindow = nil
-
-                    NSLog("✅ [ONBOARDING] Window dismissed successfully")
-                }
-            })
-        }
-    }
-}
+import UniformTypeIdentifiers
 
 // MARK: - OnboardingPage
 
@@ -238,7 +69,8 @@ enum OnboardingPage: Int, CaseIterable {
 
 struct OnboardingContentView: View {
     let onDismiss: () -> Void
-    @ObservedObject var settings = AppSettings.shared
+    @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var permissionManager: PermissionManager
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     @State private var currentPage: OnboardingPage = .welcome
@@ -247,6 +79,9 @@ struct OnboardingContentView: View {
     @State private var screenRecordingGranted = false
     @State private var accessibilityGranted = false
     @State private var isMovingForward = true
+    @State private var screenRecordingPollTask: Task<Void, Never>?
+    @State private var accessibilityPollTask: Task<Void, Never>?
+    @State private var showingFolderPicker = false
 
     var body: some View {
         ZStack {
@@ -351,6 +186,30 @@ struct OnboardingContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshPermissionState()
         }
+        .onDisappear {
+            screenRecordingPollTask?.cancel()
+            accessibilityPollTask?.cancel()
+        }
+        .fileImporter(isPresented: $showingFolderPicker, allowedContentTypes: [.folder]) { result in
+            switch result {
+            case .success(let url):
+                settings.applyFolderSelection(from: url)
+            case .failure:
+                DynamicIslandManager.shared.show(
+                    message: NSLocalizedString("settings.storage.select_folder_failed", value: "选择文件夹失败", comment: ""),
+                    duration: 2.0,
+                    style: .failure
+                )
+            }
+        }
+        .alert(item: $permissionManager.pendingAlert) { alert in
+            Alert(
+                title: Text(alert.title),
+                message: Text(alert.message),
+                primaryButton: .default(Text(alert.primaryTitle), action: alert.primaryAction),
+                secondaryButton: .cancel(Text(alert.secondaryTitle), action: alert.secondaryAction)
+            )
+        }
     }
 
     @ViewBuilder
@@ -426,10 +285,7 @@ struct OnboardingContentView: View {
                         color: .blue,
                         isSelected: settings.hasValidBookmark,
                         action: {
-                            if let path = settings.selectFolder() {
-                                settings.saveFolderPath = path
-                                settings.saveToFile = true
-                            }
+                            showingFolderPicker = true
                         }
                     )
 
@@ -564,17 +420,16 @@ struct OnboardingContentView: View {
     }
 
     private func refreshPermissionState() {
-        let manager = PermissionManager.shared
-        manager.checkAccessibilityPermission()
-        manager.checkScreenRecordingPermission()
+        permissionManager.checkAccessibilityPermission()
+        permissionManager.checkScreenRecordingPermission()
 
-        accessibilityGranted = manager.accessibilityStatus == .authorized
-        screenRecordingGranted = manager.screenRecordingStatus == .authorized
+        accessibilityGranted = permissionManager.accessibilityStatus == .authorized
+        screenRecordingGranted = permissionManager.screenRecordingStatus == .authorized
     }
 
     private func requestScreenRecordingPermission() {
         // Trigger native macOS Screen Recording popup
-        PermissionManager.shared.requestPermission(.screenRecording) { granted in
+        permissionManager.requestPermission(.screenRecording) { granted in
             if !granted {
                 // Fallback: open system settings if popup doesn't appear or user denied
                 DispatchQueue.main.async {
@@ -582,35 +437,12 @@ struct OnboardingContentView: View {
                 }
             }
         }
-
-        // Start polling to check if permission was granted
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
-            if #available(macOS 14.0, *) {
-                Task { @MainActor in
-                    do {
-                        let content = try await SCShareableContent.current
-                        if !content.displays.isEmpty {
-                            self.screenRecordingGranted = true
-                            PermissionManager.shared.checkScreenRecordingPermission()
-                            timer.invalidate()
-                        }
-                    } catch {
-                        // Still waiting for permission
-                    }
-                }
-            } else {
-                if CGPreflightScreenCaptureAccess() {
-                    self.screenRecordingGranted = true
-                    PermissionManager.shared.checkScreenRecordingPermission()
-                    timer.invalidate()
-                }
-            }
-        }
+        startScreenRecordingPoll()
     }
 
     private func requestAccessibilityPermission() {
         // Trigger native macOS Accessibility popup
-        PermissionManager.shared.requestPermission(.accessibility) { granted in
+        permissionManager.requestPermission(.accessibility) { granted in
             if !granted {
                 // Fallback: open system settings if popup doesn't appear or user denied
                 DispatchQueue.main.async {
@@ -618,15 +450,7 @@ struct OnboardingContentView: View {
                 }
             }
         }
-
-        // Start polling to check if permission was granted
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
-            if AXIsProcessTrusted() {
-                self.accessibilityGranted = true
-                PermissionManager.shared.checkAccessibilityPermission()
-                timer.invalidate()
-            }
-        }
+        startAccessibilityPoll()
     }
 
     private func openSystemPreferences(pane: String) {
@@ -634,13 +458,53 @@ struct OnboardingContentView: View {
             NSWorkspace.shared.open(url)
         }
     }
+
+    private func startScreenRecordingPoll() {
+        screenRecordingPollTask?.cancel()
+        screenRecordingPollTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+
+                if #available(macOS 14.0, *) {
+                    do {
+                        let content = try await SCShareableContent.current
+                        if !content.displays.isEmpty {
+                            screenRecordingGranted = true
+                            permissionManager.checkScreenRecordingPermission()
+                            break
+                        }
+                    } catch {
+                        // Keep waiting
+                    }
+                } else if CGPreflightScreenCaptureAccess() {
+                    screenRecordingGranted = true
+                    permissionManager.checkScreenRecordingPermission()
+                    break
+                }
+            }
+        }
+    }
+
+    private func startAccessibilityPoll() {
+        accessibilityPollTask?.cancel()
+        accessibilityPollTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+
+                if AXIsProcessTrusted() {
+                    accessibilityGranted = true
+                    permissionManager.checkAccessibilityPermission()
+                    break
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Preview
 
-struct OnboardingContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        OnboardingContentView(onDismiss: {})
-            .frame(width: 620, height: 560)
-    }
+#Preview("Onboarding") {
+    OnboardingContentView(onDismiss: {})
+        .frame(width: 620, height: 560)
+        .environmentObject(AppSettings.shared)
 }

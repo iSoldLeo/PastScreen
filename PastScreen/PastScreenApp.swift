@@ -28,19 +28,89 @@ extension Notification.Name {
 @main
 struct PastScreenApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var windowRouter = WindowRouter.shared
+    @StateObject private var imageEditorCoordinator = ImageEditorCoordinator.shared
+    @StateObject private var toastCenter = DynamicIslandManager.shared
 
     var body: some Scene {
         MenuBarExtra("PastScreen", systemImage: "camera.viewfinder") {
             MenuBarContentView(app: appDelegate)
+                .environmentObject(AppSettings.shared)
+                .environmentObject(imageEditorCoordinator)
+                .environmentObject(toastCenter)
+                .environmentObject(windowRouter)
+                .overlay(
+                    WindowActionRegistrar()
+                        .environmentObject(windowRouter)
+                )
+        }
+        .commands {
+            PastScreenCommands(appDelegate: appDelegate)
         }
 
         // Pas de fenêtre principale ; les préférences s'ouvrent via le menu
         Settings {
             SettingsView()
                 .environmentObject(AppSettings.shared)
+                .environmentObject(toastCenter)
+                .environmentObject(PermissionManager.shared)
         }
+
+        Window("素材库", id: "capture-library") {
+            CaptureLibraryRootView()
+                .environmentObject(AppSettings.shared)
+                .environmentObject(windowRouter)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 1100, height: 820)
+        .commands {
+            CaptureLibraryCommands()
+        }
+
+        Window("欢迎使用", id: "onboarding") {
+            OnboardingContentView {
+                OnboardingState.shared.hasSeenOnboarding = true
+                windowRouter.dismiss("onboarding")
+            }
+            .environmentObject(AppSettings.shared)
+            .environmentObject(PermissionManager.shared)
+            .environmentObject(toastCenter)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultPosition(.center)
+        .defaultSize(width: 620, height: 800)
+        .windowResizability(.contentSize)
+
+        Window(NSLocalizedString("tutorial.window.title", value: "使用指南", comment: ""), id: "tutorial") {
+            TutorialContentView {
+                TutorialCoordinator.dismiss()
+            }
+            .environmentObject(AppSettings.shared)
+            .environmentObject(PermissionManager.shared)
+            .environmentObject(toastCenter)
+        }
+        .defaultSize(width: 980, height: 800)
+
+        Window(NSLocalizedString("editor.window.title", value: "截图编辑", comment: ""), id: "image-editor") {
+            ImageEditorWindow()
+                .environmentObject(imageEditorCoordinator)
+                .environmentObject(AppSettings.shared)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 980, height: 760)
+        .windowResizability(.contentSize)
+
+        Window(NSLocalizedString("toast.window.title", value: "提示", comment: ""), id: "toast") {
+            DynamicIslandToastWindow()
+                .environmentObject(toastCenter)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowLevel(.floating)
+        .defaultPosition(.topTrailing)
+        .windowResizability(.contentSize)
     }
 }
+
 
 enum CaptureTrigger: String {
     case menuBar
@@ -164,8 +234,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         NSLog("🚀 [APP] About to show onboarding...")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard self != nil else { return }
-            NSLog("🚀 [APP] Calling OnboardingManager.showIfNeeded()")
-            OnboardingManager.shared.showIfNeeded()
+            NSLog("🚀 [APP] Calling OnboardingCoordinator.showIfNeeded()")
+            OnboardingCoordinator.showIfNeeded()
         }
     }
 
@@ -220,12 +290,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         guard FileManager.default.fileExists(atPath: path) else {
             // Reset lastScreenshotPath since file doesn't exist
             lastScreenshotPath = nil
-            // Show alert
-            let alert = NSAlert()
-            alert.messageText = NSLocalizedString("error.file_not_found.title", comment: "")
-            alert.informativeText = NSLocalizedString("error.file_not_found.message", comment: "")
-            alert.alertStyle = .warning
-            alert.runModal()
+            DynamicIslandManager.shared.show(
+                message: NSLocalizedString("error.file_not_found.message", comment: ""),
+                duration: 2.0,
+                style: .failure
+            )
             return
         }
 
@@ -255,17 +324,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     @objc func clearHistory() {
         AppSettings.shared.clearHistory()
-    }
-
-    @objc func changeDestinationFolder() {
-        // Ensure window is frontmost for the panel
-        NSApp.activate(ignoringOtherApps: true)
-
-        if let newPath = AppSettings.shared.selectFolder() {
-            AppSettings.shared.saveFolderPath = newPath
-            // Also ensure saving is enabled if user explicitly picks a folder
-            AppSettings.shared.saveToFile = true
-        }
     }
 
     @objc func openPreferences() {

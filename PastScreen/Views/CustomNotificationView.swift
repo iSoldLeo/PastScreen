@@ -14,84 +14,18 @@ import AppKit
 class CustomNotificationManager {
     static let shared = CustomNotificationManager()
 
-    private var notificationPanel: NSPanel?
-    private var dismissTimer: Timer?
-    private let notificationDuration: TimeInterval = 4.0
-
     func show(title: String, message: String, filePath: String? = nil) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            // Dismiss any existing notification
-            self.dismiss()
-
-            // Create notification content
-            let notificationView = CustomNotificationContentView(
-                title: title,
-                message: message,
-                filePath: filePath,
-                onDismiss: { [weak self] in
-                    self?.dismiss()
-                }
-            )
-
-            // Create hosting controller
-            let hostingController = NSHostingController(rootView: notificationView)
-
-            // Calculate notification position (top-right corner)
-            let notificationWidth: CGFloat = 360
-            let notificationHeight: CGFloat = 100
-            let screenPadding: CGFloat = 20
-
-            guard let screen = NSScreen.main else { return }
-
-            let screenFrame = screen.visibleFrame
-            let notificationRect = NSRect(
-                x: screenFrame.maxX - notificationWidth - screenPadding,
-                y: screenFrame.maxY - notificationHeight - screenPadding,
-                width: notificationWidth,
-                height: notificationHeight
-            )
-
-            // Create panel
-            let panel = NSPanel(
-                contentRect: notificationRect,
-                styleMask: [.nonactivatingPanel, .borderless],
-                backing: .buffered,
-                defer: false
-            )
-
-            panel.contentViewController = hostingController
-            panel.backgroundColor = .clear
-            panel.isOpaque = false
-            panel.hasShadow = true
-            panel.level = .floating
-            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-            panel.isFloatingPanel = true
-            panel.hidesOnDeactivate = false
-
-            self.notificationPanel = panel
-
-            // Show immediately without fade animation
-            panel.alphaValue = 1
-            panel.orderFrontRegardless()
-
-            // Auto-dismiss after duration
-            self.dismissTimer = Timer.scheduledTimer(withTimeInterval: self.notificationDuration, repeats: false) { [weak self] _ in
-                self?.dismiss()
-            }
+        let combinedMessage: String
+        if let filePath {
+            combinedMessage = "\(message) (\(filePath))"
+        } else {
+            combinedMessage = message
         }
+        DynamicIslandManager.shared.show(message: "\(title)：\(combinedMessage)", duration: 4.0)
     }
 
     func dismiss() {
-        dismissTimer?.invalidate()
-        dismissTimer = nil
-
-        guard let panel = notificationPanel else { return }
-
-        // Close immediately without fade animation
-        panel.close()
-        notificationPanel = nil
+        DynamicIslandManager.shared.dismiss()
     }
 }
 

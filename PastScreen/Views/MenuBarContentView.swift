@@ -1,12 +1,15 @@
 import SwiftUI
 import AppKit
 import Combine
+import UniformTypeIdentifiers
 
 struct MenuBarContentView: View {
     @Environment(\.openSettings) private var openSettings
-    @ObservedObject private var settings = AppSettings.shared
+    @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var windowRouter: WindowRouter
     @ObservedObject var app: AppDelegate
     @StateObject private var libraryMenuModel = CaptureLibraryMenuModel()
+    @State private var showingFolderPicker = false
 
     private var canRevealLast: Bool { app.lastScreenshotPath != nil }
 
@@ -39,7 +42,7 @@ struct MenuBarContentView: View {
     private var historySection: some View {
         Group {
             Button(NSLocalizedString("menu.library.open", value: "打开素材库…", comment: "")) {
-                CaptureLibraryManager.shared.show()
+                windowRouter.open("capture-library")
             }
 
             Button(NSLocalizedString("menu.show_last", comment: "")) {
@@ -67,7 +70,7 @@ struct MenuBarContentView: View {
     private var utilitySection: some View {
         Group {
             Button(NSLocalizedString("menu.destination", comment: "")) {
-                app.changeDestinationFolder()
+                showingFolderPicker = true
             }
             Button(NSLocalizedString("menu.preferences", comment: "")) {
                 // Use SwiftUI's settings action to ensure the Settings scene opens reliably (macOS 14+)
@@ -76,6 +79,18 @@ struct MenuBarContentView: View {
             }
             Button(NSLocalizedString("menu.quit", comment: "")) {
                 app.quit()
+            }
+        }
+        .fileImporter(isPresented: $showingFolderPicker, allowedContentTypes: [.folder]) { result in
+            switch result {
+            case .success(let url):
+                settings.applyFolderSelection(from: url)
+            case .failure:
+                DynamicIslandManager.shared.show(
+                    message: NSLocalizedString("settings.storage.select_folder_failed", value: "选择文件夹失败", comment: ""),
+                    duration: 2.0,
+                    style: .failure
+                )
             }
         }
     }

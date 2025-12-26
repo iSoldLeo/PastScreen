@@ -22,20 +22,14 @@ private struct SettingsPage<Content: View>: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                content
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
+        Form {
+            content
         }
-        .background {
-            if reduceTransparency {
-                Color(nsColor: .windowBackgroundColor)
-            } else {
-                Rectangle().fill(.ultraThinMaterial)
-            }
-        }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 }
 
@@ -53,23 +47,18 @@ private struct SettingsGlassSection<Content: View>: View {
     }
 
     var body: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Label(title, systemImage: systemImage)
-                    .font(.headline)
-
-                Divider()
-
-                content
-
-                if let footer {
-                    Text(footer)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 2)
-                }
+        Section {
+            content
+        } header: {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+        } footer: {
+            if let footer {
+                Text(footer)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 2)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -95,24 +84,11 @@ struct SettingsView: View {
             AppsSettingsView()
                 .tabItem { Label(NSLocalizedString("settings.tab.apps", value: "应用", comment: ""), systemImage: "macwindow") }
         }
+        .tabViewStyle(.automatic) // 使用系统默认的设置页切换样式（工具栏分段+快捷键）
         .frame(minWidth: 720, idealWidth: 780, minHeight: 560)
-        .background {
-            if reduceTransparency {
-                Color(nsColor: .windowBackgroundColor)
-            } else {
-                Rectangle().fill(.ultraThinMaterial)
-            }
-        }
-        .overlay(alignment: .bottomTrailing) {
-            Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"))")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding([.trailing, .bottom], 8)
-        }
-        // Off-screen预渲染编辑页的径向预览，打开设置时就触发GPU管线，减少切换时卡顿
-        .overlay(alignment: .topLeading) {
-            radialPrewarmView
-        }
+        .background(Color(nsColor: .windowBackgroundColor).ignoresSafeArea())
+        .toolbarBackground(Color(nsColor: .windowBackgroundColor), for: .windowToolbar)
+        .toolbarBackground(.visible, for: .windowToolbar)
     }
 }
 
@@ -144,7 +120,7 @@ struct GeneralSettingsView: View {
                 systemImage: "questionmark.circle"
             ) {
                 Button {
-                    TutorialManager.shared.show()
+                    TutorialCoordinator.show()
                 } label: {
                     Label(NSLocalizedString("settings.general.help.view_tutorial", value: "打开使用指南", comment: ""), systemImage: "book")
                 }
@@ -165,6 +141,11 @@ struct GeneralSettingsView: View {
                 if let url = URL(string: "https://github.com/iSoldLeo/PastScreen-CN/blob/main/PRIVACY.md") {
                     Link(NSLocalizedString("settings.general.privacy.view_policy", value: "查看完整隐私政策", comment: ""), destination: url)
                 }
+
+                Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"))")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
             }
         }
     }
@@ -501,8 +482,6 @@ private struct TrailingSwitchToggleStyle: ToggleStyle {
             Toggle("", isOn: configuration.$isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .controlSize(.small)
-                .scaleEffect(0.82)
         }
     }
 }
@@ -514,6 +493,7 @@ struct StorageSettingsView: View {
     @StateObject private var libraryModel = CaptureLibrarySettingsModel()
     @State private var showClearLibraryConfirm = false
     @State private var scheduledCleanupTask: Task<Void, Never>?
+    @State private var showingFolderPicker = false
 
     var body: some View {
         SettingsPage {
@@ -526,9 +506,7 @@ struct StorageSettingsView: View {
                         if newValue {
                             if !settings.hasValidBookmark {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    if let newPath = settings.selectFolder() {
-                                        settings.saveFolderPath = newPath
-                                    }
+                                    showingFolderPicker = true
                                 }
                             }
                         }
@@ -545,9 +523,7 @@ struct StorageSettingsView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
                             Button(NSLocalizedString("settings.storage.change_button", comment: "")) {
-                                if let newPath = settings.selectFolder() {
-                                    settings.saveFolderPath = newPath
-                                }
+                                showingFolderPicker = true
                             }
                             .controlSize(.small)
 
@@ -660,6 +636,18 @@ struct StorageSettingsView: View {
                 }
             }
         }
+        .fileImporter(isPresented: $showingFolderPicker, allowedContentTypes: [.folder]) { result in
+            switch result {
+            case .success(let url):
+                settings.applyFolderSelection(from: url)
+            case .failure:
+                DynamicIslandManager.shared.show(
+                    message: NSLocalizedString("settings.storage.select_folder_failed", value: "选择文件夹失败", comment: ""),
+                    duration: 2.0,
+                    style: .failure
+                )
+            }
+        }
         .onAppear {
             libraryModel.refresh()
         }
@@ -761,7 +749,6 @@ private struct HotKeyToggleRow: View {
                 Toggle("", isOn: $isEnabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
-                    .controlSize(.small)
 
                 HotKeyRecorderView(hotkey: $hotkey)
                     .disabled(!isEnabled)
@@ -811,7 +798,6 @@ private struct EditingToolRow: View {
             Toggle("", isOn: isEnabled)
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .controlSize(.small)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -1014,6 +1000,7 @@ private struct RadialToolDropDelegate: DropDelegate {
 
 struct AppsSettingsView: View {
     @EnvironmentObject var settings: AppSettings
+    @State private var showingAppImporter = false
 
     var body: some View {
         let appRulesAvailable = settings.saveToFile && settings.hasValidSaveFolder
@@ -1106,25 +1093,21 @@ struct AppsSettingsView: View {
                 .disabled(!appRulesAvailable)
             }
         }
+        .fileImporter(
+            isPresented: $showingAppImporter,
+            allowedContentTypes: [.application],
+            allowsMultipleSelection: false
+        ) { result in
+            guard case .success(let urls) = result, let url = urls.first else { return }
+            guard let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier else { return }
+            let name = FileManager.default.displayName(atPath: url.path)
+            let override = AppOverride(bundleIdentifier: bundleID, appName: name, format: .path)
+            settings.addAppOverride(override)
+        }
     }
 
     func addApp() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.application]
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.prompt = NSLocalizedString("settings.select_folder.prompt", comment: "")
-        panel.message = NSLocalizedString("settings.apps.select_app_message", value: "选择一个应用", comment: "")
-
-        if panel.runModal() == .OK, let url = panel.url {
-            if let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier {
-                let name = FileManager.default.displayName(atPath: url.path)
-                let override = AppOverride(bundleIdentifier: bundleID, appName: name, format: .path)
-                settings.addAppOverride(override)
-            }
-        }
+        showingAppImporter = true
     }
 }
 
@@ -1218,19 +1201,8 @@ extension HotKey {
     }
 }
 
-private extension SettingsView {
-    var radialPrewarmView: some View {
-        RadialWheelPreview(tools: settings.radialDrawingTools)
-            .frame(width: 220, height: 200)
-            .opacity(0.001)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-    }
-}
-
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        SettingsView()
-            .environmentObject(AppSettings.shared)
-    }
+#Preview("Settings Window") {
+    SettingsView()
+        .environmentObject(AppSettings.shared)
+        .frame(width: 780, height: 600)
 }

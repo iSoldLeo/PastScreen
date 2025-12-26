@@ -763,29 +763,20 @@ class AppSettings: ObservableObject {
         }
     }
 
-    func selectFolder() -> String? {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.prompt = NSLocalizedString("settings.select_folder.prompt", comment: "")
-        panel.message = NSLocalizedString("settings.select_folder.message", comment: "")
-
-        if panel.runModal() == .OK {
-            if let url = panel.url {
-                // Create security scoped bookmark
-                do {
-                    let bookmarkData = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                    self.saveFolderBookmark = bookmarkData
-                    startAccessing(url: url)
-                } catch {
-                    // Bookmark creation failed silently
-                }
-
-                return url.path + "/"
-            }
+    @MainActor
+    func applyFolderSelection(from url: URL) {
+        do {
+            let bookmarkData = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+            saveFolderBookmark = bookmarkData
+            startAccessing(url: url)
+        } catch {
+            // Bookmark creation failed silently; still update path for non-sandbox environments.
         }
-        return nil
+
+        let basePath = url.path
+        saveFolderPath = url.hasDirectoryPath ? "\(basePath)/" : basePath
+        saveToFile = true
+        ensureFolderExists()
     }
 
     private func restoreFolderAccess() {

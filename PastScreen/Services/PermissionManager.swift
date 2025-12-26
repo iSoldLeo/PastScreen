@@ -9,6 +9,17 @@ import Foundation
 import AppKit
 import UserNotifications
 import Combine
+import SwiftUI
+
+struct PermissionAlert: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+    let primaryTitle: String
+    let secondaryTitle: String
+    let primaryAction: () -> Void
+    let secondaryAction: () -> Void
+}
 
 enum PermissionType: CaseIterable {
     case screenRecording
@@ -57,6 +68,7 @@ class PermissionManager: ObservableObject {
     @Published var screenRecordingStatus: PermissionStatus = .notDetermined
     @Published var accessibilityStatus: PermissionStatus = .notDetermined
     @Published var notificationStatus: PermissionStatus = .notDetermined
+    @Published var pendingAlert: PermissionAlert?
 
     private var retryCount: [PermissionType: Int] = [:]
     private let maxRetries = 3
@@ -189,40 +201,60 @@ class PermissionManager: ObservableObject {
     }
 
     func showPermissionAlert(for permissions: [PermissionType]) {
-        let alert = NSAlert()
-        alert.messageText = NSLocalizedString("error.permission_denied", value: "需要权限", comment: "")
-
         let header = NSLocalizedString("permission.request.header", value: "PastScreen-CN 需要以下权限才能正常工作：", comment: "")
         let footer = NSLocalizedString("permission.request.footer", value: "请在“系统设置 → 隐私与安全性”中开启。", comment: "")
         let permissionsList = permissions.map { "\($0.icon) \($0.localizedName)" }.joined(separator: "\n")
+        let composedMessage = "\(header)\n\n\(permissionsList)\n\n\(footer)"
 
-        alert.informativeText = "\(header)\n\n\(permissionsList)\n\n\(footer)"
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: NSLocalizedString("error.open_system_prefs", value: "打开系统设置", comment: ""))
-        alert.addButton(withTitle: NSLocalizedString("error.later", value: "稍后", comment: ""))
+        pendingAlert = PermissionAlert(
+            title: NSLocalizedString("error.permission_denied", value: "需要权限", comment: ""),
+            message: composedMessage,
+            primaryTitle: NSLocalizedString("error.open_system_prefs", value: "打开系统设置", comment: ""),
+            secondaryTitle: NSLocalizedString("error.later", value: "稍后", comment: ""),
+            primaryAction: { [weak self] in
+                self?.pendingAlert = nil
+                self?.openSystemPreferences()
+            },
+            secondaryAction: { [weak self] in
+                self?.pendingAlert = nil
+            }
+        )
 
-        if alert.runModal() == .alertFirstButtonReturn {
-            openSystemPreferences()
-        }
+        // Fallback UI path when no SwiftUI alert is currently presented (e.g., triggered from AppDelegate)
+        DynamicIslandManager.shared.show(
+            message: composedMessage,
+            duration: 3.5,
+            style: .failure
+        )
     }
 
     private func showMaxRetriesAlert(for type: PermissionType) {
-        let alert = NSAlert()
-        alert.messageText = "\(type.icon) \(type.localizedName) " + NSLocalizedString("error.permission_denied", value: "需要权限", comment: "")
-
         let message = NSLocalizedString("permission.max_retries.message", value: "PastScreen-CN 已达到权限请求次数上限。\n\n请手动开启", comment: "")
 
-        alert.informativeText = """
+        let info = """
         \(message) \(type.localizedName):
         系统设置 → 隐私与安全性 → \(type.localizedName)
         """
-        alert.alertStyle = .critical
-        alert.addButton(withTitle: NSLocalizedString("error.open_system_prefs", value: "打开系统设置", comment: ""))
-        alert.addButton(withTitle: NSLocalizedString("common.ok", comment: ""))
 
-        if alert.runModal() == .alertFirstButtonReturn {
-            openSystemPreferences()
-        }
+        pendingAlert = PermissionAlert(
+            title: "\(type.icon) \(type.localizedName) " + NSLocalizedString("error.permission_denied", value: "需要权限", comment: ""),
+            message: info,
+            primaryTitle: NSLocalizedString("error.open_system_prefs", value: "打开系统设置", comment: ""),
+            secondaryTitle: NSLocalizedString("common.ok", comment: ""),
+            primaryAction: { [weak self] in
+                self?.pendingAlert = nil
+                self?.openSystemPreferences()
+            },
+            secondaryAction: { [weak self] in
+                self?.pendingAlert = nil
+            }
+        )
+
+        DynamicIslandManager.shared.show(
+            message: info,
+            duration: 3.5,
+            style: .failure
+        )
     }
 
     func openSystemPreferences() {

@@ -8,152 +8,23 @@
 import SwiftUI
 import AppKit
 
-final class TutorialWindow: NSWindow {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-}
-
-final class TutorialManager: NSObject, NSWindowDelegate {
-    static let shared = TutorialManager()
-
-    private var window: TutorialWindow?
-    private var hostingController: NSHostingController<TutorialContentView>?
-    private var captureFlowObserver: Any?
-
-    func show() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-
-            if let window = self.window {
-                window.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
-                return
-            }
-
-            let view = TutorialContentView { [weak self] in
-                self?.dismiss()
-            }
-
-            let host = NSHostingController(rootView: view)
-            self.hostingController = host
-
-            let screenFrame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1400, height: 900)
-            let width = min(1100, max(900, screenFrame.width * 0.78))
-            let height = min(900, max(740, screenFrame.height * 0.82))
-            let rect = NSRect(x: 0, y: 0, width: width, height: height)
-
-            let window = TutorialWindow(
-                contentRect: rect,
-                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-
-            window.title = NSLocalizedString("tutorial.window.title", value: "使用指南", comment: "")
-            window.titleVisibility = .hidden
-            window.titlebarAppearsTransparent = true
-            window.isMovableByWindowBackground = true
-            window.isReleasedWhenClosed = false
-            window.minSize = NSSize(width: 900, height: 720)
-            window.setFrameAutosaveName("TutorialWindow")
-            window.contentViewController = host
-            window.center()
-            window.delegate = self
-            window.makeKeyAndOrderFront(nil)
-
-            self.window = window
-            NSApp.activate(ignoringOtherApps: true)
+enum TutorialCoordinator {
+    static func show() {
+        DispatchQueue.main.async {
+            WindowRouter.shared.open("tutorial")
         }
     }
 
-    func dismiss() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            if let captureFlowObserver {
-                NotificationCenter.default.removeObserver(captureFlowObserver)
-                self.captureFlowObserver = nil
-            }
-            self.window?.close()
-            self.window = nil
-            self.hostingController = nil
-        }
-    }
-
-    func windowWillClose(_ notification: Notification) {
-        if let captureFlowObserver {
-            NotificationCenter.default.removeObserver(captureFlowObserver)
-            self.captureFlowObserver = nil
-        }
-        window = nil
-        hostingController = nil
-    }
-
-    func tryQuickCapture() {
-        startCapture(kind: .quick)
-    }
-
-    func tryAdvancedCapture() {
-        startCapture(kind: .advanced)
-    }
-
-    private enum CaptureKind {
-        case quick
-        case advanced
-    }
-
-    private func startCapture(kind: CaptureKind) {
-        let manager = PermissionManager.shared
-        manager.checkScreenRecordingPermission()
-
-        let begin: () -> Void = { [weak self] in
-            guard let self else { return }
-            guard let screenshotService = (NSApp.delegate as? AppDelegate)?.screenshotService else { return }
-
-            self.window?.orderOut(nil)
-
-            if self.captureFlowObserver == nil {
-                self.captureFlowObserver = NotificationCenter.default.addObserver(
-                    forName: .captureFlowEnded,
-                    object: nil,
-                    queue: .main
-                ) { [weak self] _ in
-                    guard let self else { return }
-                    self.window?.makeKeyAndOrderFront(nil)
-                    NSApp.activate(ignoringOtherApps: true)
-                }
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                screenshotService.capturePreviousApp()
-                switch kind {
-                case .quick:
-                    screenshotService.captureScreenshot(trigger: .menuBar)
-                case .advanced:
-                    screenshotService.captureAdvancedScreenshot(trigger: .menuBar)
-                }
-            }
-        }
-
-        if manager.screenRecordingStatus == .authorized {
-            begin()
-            return
-        }
-
-        manager.requestPermission(.screenRecording) { granted in
-            DispatchQueue.main.async {
-                if granted {
-                    begin()
-                } else {
-                    manager.showPermissionAlert(for: [.screenRecording])
-                }
-            }
+    static func dismiss() {
+        DispatchQueue.main.async {
+            WindowRouter.shared.dismiss("tutorial")
         }
     }
 }
 
-private struct TutorialContentView: View {
-    @ObservedObject private var settings = AppSettings.shared
-    @ObservedObject private var permissionManager = PermissionManager.shared
+struct TutorialContentView: View {
+    @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var permissionManager: PermissionManager
     @Environment(\.openSettings) private var openSettings
 
     let onDismiss: () -> Void
@@ -180,10 +51,19 @@ private struct TutorialContentView: View {
             }
         }
         .background {
-            Rectangle().fill(.ultraThinMaterial)
+            Color(nsColor: .windowBackgroundColor)
+                .ignoresSafeArea()
         }
         .onAppear {
             permissionManager.checkAllPermissions()
+        }
+        .alert(item: $permissionManager.pendingAlert) { alert in
+            Alert(
+                title: Text(alert.title),
+                message: Text(alert.message),
+                primaryButton: .default(Text(alert.primaryTitle), action: alert.primaryAction),
+                secondaryButton: .cancel(Text(alert.secondaryTitle), action: alert.secondaryAction)
+            )
         }
     }
 
@@ -230,6 +110,7 @@ private struct TutorialContentView: View {
                     .font(.callout)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var permissionsSection: some View {
@@ -243,7 +124,7 @@ private struct TutorialContentView: View {
                     status: permissionManager.screenRecordingStatus,
                     requestTitle: NSLocalizedString("tutorial.permission.request", value: "请求授权", comment: ""),
                     onRequest: {
-                        PermissionManager.shared.requestPermission(.screenRecording) { granted in
+                        permissionManager.requestPermission(.screenRecording) { granted in
                             if !granted {
                                 openSystemPreferencesPrivacy(pane: "ScreenCapture")
                             }
@@ -259,7 +140,7 @@ private struct TutorialContentView: View {
                     status: permissionManager.accessibilityStatus,
                     requestTitle: NSLocalizedString("tutorial.permission.request", value: "请求授权", comment: ""),
                     onRequest: {
-                        PermissionManager.shared.requestPermission(.accessibility) { granted in
+                        permissionManager.requestPermission(.accessibility) { granted in
                             if !granted {
                                 openSystemPreferencesPrivacy(pane: "Accessibility")
                             }
@@ -275,6 +156,7 @@ private struct TutorialContentView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var shortcutsSection: some View {
@@ -304,6 +186,7 @@ private struct TutorialContentView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var captureTipsSection: some View {
@@ -317,6 +200,7 @@ private struct TutorialContentView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var storageSection: some View {
@@ -341,6 +225,7 @@ private struct TutorialContentView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var troubleshootingSection: some View {
@@ -354,6 +239,7 @@ private struct TutorialContentView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func openSystemPreferencesPrivacy(pane: String) {

@@ -9,77 +9,79 @@ import SwiftUI
 import AppKit
 import CoreImage
 import CoreImage.CIFilterBuiltins
+import Combine
 
-class ImageEditingWindow: NSWindow {
-    private var hostingView: NSHostingView<AnyView>!
-    private var screenshotImage: NSImage
-    private var onCompletion: ((NSImage) -> Void)?
-    private var onCancel: (() -> Void)?
-    
-    init(image: NSImage, onCompletion: @escaping (NSImage) -> Void, onCancel: @escaping () -> Void) {
-        self.screenshotImage = image
-        self.onCompletion = onCompletion
-        self.onCancel = onCancel
-        
-        // Create window with appropriate size
-        let windowSize = NSSize(width: 800, height: 600)
-        let windowRect = NSRect(origin: .zero, size: windowSize)
-        
-        super.init(contentRect: windowRect,
-                   styleMask: [.titled, .closable, .resizable],
-                   backing: .buffered,
-                   defer: false)
-        
-        setupWindow()
-        setupContentView()
+@MainActor
+final class ImageEditorCoordinator: ObservableObject {
+    let objectWillChange = ObservableObjectPublisher()
+    static let shared = ImageEditorCoordinator()
+
+    struct Request: Identifiable {
+        let id = UUID()
+        let image: NSImage
+        let onCompletion: (NSImage) -> Void
+        let onCancel: () -> Void
     }
-    
-    private func setupWindow() {
-        title = NSLocalizedString("editor.window.title", comment: "")
-        center()
-        isReleasedWhenClosed = false
-        
-        // Set minimum size
-        minSize = NSSize(width: 600, height: 400)
-        
-        // Make window modal
-        level = .floating
-        // Remove isMovableByWindowBackground to prevent window dragging when drawing
+
+    @Published var request: Request?
+    private var isPresenting: Bool { request != nil }
+
+    func present(image: NSImage, onCompletion: @escaping (NSImage) -> Void, onCancel: @escaping () -> Void) {
+        request = Request(image: image, onCompletion: onCompletion, onCancel: onCancel)
+        WindowRouter.shared.open("image-editor")
     }
-    
-    private func setupContentView() {
-        let editingView = ImageEditingView(
-            image: screenshotImage,
-            onCompletion: { [weak self] editedImage in
-                self?.hide()
-                self?.onCompletion?(editedImage)
-            },
-            onCancel: { [weak self] in
-                self?.hide()
-                self?.onCancel?()
-            },
-            radialTools: AppSettings.shared.radialDrawingTools
-        )
-        let wrappedView = AnyView(editingView.environmentObject(AppSettings.shared))
-        
-        hostingView = NSHostingView(rootView: wrappedView)
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
-        contentView?.addSubview(hostingView)
-        
-        NSLayoutConstraint.activate([
-            hostingView.topAnchor.constraint(equalTo: contentView!.topAnchor),
-            hostingView.leadingAnchor.constraint(equalTo: contentView!.leadingAnchor),
-            hostingView.trailingAnchor.constraint(equalTo: contentView!.trailingAnchor),
-            hostingView.bottomAnchor.constraint(equalTo: contentView!.bottomAnchor)
-        ])
+
+    func complete(with editedImage: NSImage) {
+        guard let request else { return }
+        self.request = nil
+        request.onCompletion(editedImage)
+        WindowRouter.shared.dismiss("image-editor")
     }
-    
-    func show() {
-        makeKeyAndOrderFront(nil)
+
+    func cancel() {
+        guard let request else { return }
+        self.request = nil
+        request.onCancel()
+        WindowRouter.shared.dismiss("image-editor")
     }
-    
-    func hide() {
-        orderOut(nil)
+}
+
+struct ImageEditorWindow: View {
+    @EnvironmentObject private var coordinator: ImageEditorCoordinator
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        Group {
+            if let request = coordinator.request {
+                ImageEditingView(
+                    image: request.image,
+                    onCompletion: { coordinator.complete(with: $0) },
+                    onCancel: { coordinator.cancel() },
+                    radialTools: AppSettings.shared.radialDrawingTools
+                )
+            } else {
+                ContentUnavailableView(
+                    NSLocalizedString("editor.window.empty", value: "暂无截图", comment: ""),
+                    systemImage: "camera.viewfinder"
+                )
+                .frame(minWidth: 620, minHeight: 420)
+                .background(backgroundStyle)
+            }
+        }
+        .frame(minWidth: 720, minHeight: 520)
+        .onDisappear {
+            coordinator.cancel()
+        }
+    }
+
+    private var backgroundStyle: some View {
+        Group {
+            if reduceTransparency {
+                Color(nsColor: .windowBackgroundColor)
+            } else {
+                Rectangle().fill(.ultraThinMaterial)
+            }
+        }
     }
 }
 

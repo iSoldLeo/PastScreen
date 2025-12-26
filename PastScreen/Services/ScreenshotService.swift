@@ -308,11 +308,11 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         scheduleSelectionCleanup()
     }
     private func showErrorAlert(_ message: String) {
-        let alert = NSAlert()
-        alert.messageText = NSLocalizedString("error.capture_error", comment: "")
-        alert.informativeText = message
-        alert.alertStyle = .warning
-        alert.runModal()
+        DynamicIslandManager.shared.show(
+            message: message,
+            duration: 2.0,
+            style: .failure
+        )
     }
 
     private func scheduleSelectionCleanup(postCaptureFlowEnded: Bool = true) {
@@ -1095,8 +1095,8 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         let nsImage = NSImage(size: selectionRect.size)
         nsImage.addRepresentation(rep)
 
-        // Show editing window
-        let editingWindow = ImageEditingWindow(
+        // Show editing window via SwiftUI scene
+        ImageEditorCoordinator.shared.present(
             image: nsImage,
             onCompletion: { [weak self] editedImage in
                 self?.handleEditedImage(
@@ -1115,8 +1115,6 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
                 NotificationCenter.default.post(name: .captureFlowEnded, object: nil)
             }
         )
-        
-        editingWindow.show()
     }
 
     private func performOCRCapture(
@@ -1854,15 +1852,11 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     }
 
     private func showErrorNotification(error: Error) {
-        // For errors, show a proper alert dialog
-        DispatchQueue.main.async {
-            let alert = NSAlert()
-            alert.messageText = "截图错误"
-            alert.informativeText = error.localizedDescription
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "确定")
-            alert.runModal()
-        }
+        DynamicIslandManager.shared.show(
+            message: error.localizedDescription,
+            duration: 2.0,
+            style: .failure
+        )
     }
 
     deinit {
