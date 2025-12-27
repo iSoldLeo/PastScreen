@@ -23,6 +23,7 @@ enum AppCategory {
     case unknown
 }
 
+@MainActor
 class ScreenshotService: NSObject, SelectionWindowDelegate {
     private var previousApp: NSRunningApplication? // Store app that was active before capture
     private var selectionWindow: SelectionWindow? // Custom selection window

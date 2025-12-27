@@ -59,6 +59,7 @@ enum WindowCaptureError: LocalizedError {
     }
 }
 
+@MainActor
 final class WindowCaptureCoordinator {
     static let shared = WindowCaptureCoordinator()
     private let selfPID: pid_t = getpid()

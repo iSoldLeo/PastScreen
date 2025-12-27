@@ -119,6 +119,7 @@ enum CaptureTrigger: String {
     case automation
 }
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
     var screenshotService: ScreenshotService?
     private var hasPromptedAccessibility = false

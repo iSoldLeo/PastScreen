@@ -11,6 +11,7 @@ import AppKit
 
 // MARK: - CustomNotificationManager
 
+@MainActor
 class CustomNotificationManager {
     static let shared = CustomNotificationManager()
 

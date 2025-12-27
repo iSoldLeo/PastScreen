@@ -10,6 +10,7 @@ import Foundation
 
 // MARK: - Library Service (async + non-blocking)
 
+@MainActor
 final class CaptureLibrary {
     static let shared = CaptureLibrary()
 

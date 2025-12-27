@@ -26,6 +26,7 @@ enum OnboardingCoordinator {
     }
 }
 
+@MainActor
 final class OnboardingState {
     static let shared = OnboardingState()
     private let key = "hasSeenOnboarding"

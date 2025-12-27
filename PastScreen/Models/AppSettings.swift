@@ -243,6 +243,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 }
 
+@MainActor
 class AppSettings: ObservableObject {
     static let shared = AppSettings()
     // Defaults for window border (off-white with a hint of gray)

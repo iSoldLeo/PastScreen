@@ -8,6 +8,7 @@
 import Foundation
 
 // Keep a reference to the currently selected bundle.
+@MainActor
 private var activeLanguageBundle: Bundle?
 
 private let _bundleSwizzleOnce: Void = {
