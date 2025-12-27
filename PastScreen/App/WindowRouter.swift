@@ -3,7 +3,7 @@ import Combine
 
 // Shared window routing between SwiftUI windows and App-level actions
 @MainActor
-final class WindowRouter: ObservableObject {
+final class WindowRouter: @MainActor ObservableObject {
     let objectWillChange = ObservableObjectPublisher()
     static let shared = WindowRouter()
     private var openAction: OpenWindowAction?

@@ -120,7 +120,7 @@ enum CaptureTrigger: String {
 }
 
 @MainActor
-class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
+class AppDelegate: NSObject, @MainActor NSApplicationDelegate, @MainActor UNUserNotificationCenterDelegate, @MainActor ObservableObject {
     var screenshotService: ScreenshotService?
     private var hasPromptedAccessibility = false
     private var hasPromptedScreenRecording = false

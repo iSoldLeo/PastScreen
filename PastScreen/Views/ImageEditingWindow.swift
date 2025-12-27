@@ -12,7 +12,7 @@ import CoreImage.CIFilterBuiltins
 import Combine
 
 @MainActor
-final class ImageEditorCoordinator: ObservableObject {
+final class ImageEditorCoordinator: @MainActor ObservableObject {
     let objectWillChange = ObservableObjectPublisher()
     static let shared = ImageEditorCoordinator()
 

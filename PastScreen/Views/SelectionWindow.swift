@@ -9,6 +9,7 @@ import Foundation
 import AppKit
 
 // Protocol simple pour communiquer avec le service
+@MainActor
 protocol SelectionWindowDelegate: AnyObject {
     func selectionWindow(_ window: SelectionWindow, didSelectRect rect: CGRect)
     func selectionWindow(_ window: SelectionWindow, didSelectWindow windowResult: WindowHitTestResult)

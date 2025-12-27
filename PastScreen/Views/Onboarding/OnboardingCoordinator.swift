@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 enum OnboardingCoordinator {
     static func showIfNeeded() {
         NSLog("🔍 [ONBOARDING] showIfNeeded called, hasSeenOnboarding = \(OnboardingState.shared.hasSeenOnboarding)")

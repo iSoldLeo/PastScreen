@@ -24,7 +24,7 @@ enum AppCategory {
 }
 
 @MainActor
-class ScreenshotService: NSObject, SelectionWindowDelegate {
+class ScreenshotService: NSObject, @MainActor SelectionWindowDelegate {
     private var previousApp: NSRunningApplication? // Store app that was active before capture
     private var selectionWindow: SelectionWindow? // Custom selection window
     private var frozenDisplaySnapshots: [CGDirectDisplayID: CGImage] = [:] // Per-display snapshots captured via ScreenCaptureKit
