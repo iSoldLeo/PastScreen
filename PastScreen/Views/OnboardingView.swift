@@ -461,7 +461,7 @@ struct OnboardingContentView: View {
 
     private func startScreenRecordingPoll() {
         screenRecordingPollTask?.cancel()
-        screenRecordingPollTask = Task { @MainActor in
+        screenRecordingPollTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 500_000_000)
 
@@ -469,16 +469,20 @@ struct OnboardingContentView: View {
                     do {
                         let content = try await SCShareableContent.current
                         if !content.displays.isEmpty {
-                            screenRecordingGranted = true
-                            permissionManager.checkScreenRecordingPermission()
+                            await MainActor.run {
+                                screenRecordingGranted = true
+                                permissionManager.checkScreenRecordingPermission()
+                            }
                             break
                         }
                     } catch {
                         // Keep waiting
                     }
                 } else if CGPreflightScreenCaptureAccess() {
-                    screenRecordingGranted = true
-                    permissionManager.checkScreenRecordingPermission()
+                    await MainActor.run {
+                        screenRecordingGranted = true
+                        permissionManager.checkScreenRecordingPermission()
+                    }
                     break
                 }
             }
@@ -503,8 +507,10 @@ struct OnboardingContentView: View {
 
 // MARK: - Preview
 
+#if DEBUG && canImport(PreviewsMacros)
 #Preview("Onboarding") {
     OnboardingContentView(onDismiss: {})
         .frame(width: 620, height: 560)
         .environmentObject(AppSettings.shared)
 }
+#endif

@@ -415,7 +415,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         }
     }
 
-    private func requestScreenRecordingIfNeeded(onGranted: @escaping () -> Void) {
+    private func requestScreenRecordingIfNeeded(onGranted: @MainActor @Sendable @escaping () -> Void) {
         permissionManager.checkScreenRecordingPermission()
         if permissionManager.screenRecordingStatus == .authorized {
             onGranted()

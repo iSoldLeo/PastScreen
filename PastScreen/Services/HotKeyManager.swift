@@ -11,6 +11,7 @@ import Foundation
 import AppKit
 import Combine
 
+@MainActor
 class HotKeyManager {
 
     static let shared = HotKeyManager()
@@ -70,6 +71,7 @@ class HotKeyManager {
             }
     }
 
+    @MainActor
     deinit {
         stopMonitoring()
         settingsObserver?.cancel()

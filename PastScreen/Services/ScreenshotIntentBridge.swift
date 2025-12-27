@@ -107,43 +107,55 @@ final class ScreenshotIntentBridge {
 
     private func awaitAutomationResult(requestID: UUID, timeoutSeconds: TimeInterval = 90) async throws -> AutomationResult {
         try await withCheckedThrowingContinuation { continuation in
-            var resolved = false
-            var observer: NSObjectProtocol?
-
-            func finish(_ result: Result<AutomationResult, Error>) {
-                guard !resolved else { return }
-                resolved = true
-                if let observer {
-                    NotificationCenter.default.removeObserver(observer)
-                }
-                switch result {
-                case .success(let value):
-                    continuation.resume(returning: value)
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-
-            observer = NotificationCenter.default.addObserver(
-                forName: .automationCaptureCompleted,
-                object: nil,
-                queue: .main
-            ) { note in
-                guard
-                    let userInfo = note.userInfo,
-                    let idString = userInfo["requestID"] as? String,
-                    idString == requestID.uuidString
-                else { return }
-
-                let filePath = userInfo["filePath"] as? String
-                let ocrText = userInfo["ocrText"] as? String
-                let error = userInfo["error"] as? String
-                finish(.success(AutomationResult(filePath: filePath, ocrText: ocrText, error: error)))
-            }
-
             Task { @MainActor in
+                @MainActor
+                final class AutomationWaiter {
+                    var resolved = false
+                    var observer: NSObjectProtocol?
+                    let continuation: CheckedContinuation<AutomationResult, Error>
+
+                    init(continuation: CheckedContinuation<AutomationResult, Error>) {
+                        self.continuation = continuation
+                    }
+
+                    func finish(_ result: Result<AutomationResult, Error>) {
+                        guard !resolved else { return }
+                        resolved = true
+                        if let observer {
+                            NotificationCenter.default.removeObserver(observer)
+                        }
+                        switch result {
+                        case .success(let value):
+                            continuation.resume(returning: value)
+                        case .failure(let error):
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                }
+
+                let waiter = AutomationWaiter(continuation: continuation)
+
+                waiter.observer = NotificationCenter.default.addObserver(
+                    forName: .automationCaptureCompleted,
+                    object: nil,
+                    queue: .main
+                ) { note in
+                    guard
+                        let userInfo = note.userInfo,
+                        let idString = userInfo["requestID"] as? String,
+                        idString == requestID.uuidString
+                    else { return }
+
+                    let filePath = userInfo["filePath"] as? String
+                    let ocrText = userInfo["ocrText"] as? String
+                    let error = userInfo["error"] as? String
+                    Task { @MainActor in
+                        waiter.finish(.success(AutomationResult(filePath: filePath, ocrText: ocrText, error: error)))
+                    }
+                }
+
                 try? await Task.sleep(nanoseconds: UInt64(timeoutSeconds * 1_000_000_000))
-                finish(.failure(IntentError.timeout))
+                waiter.finish(.failure(IntentError.timeout))
             }
         }
     }

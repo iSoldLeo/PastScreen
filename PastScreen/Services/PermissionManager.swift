@@ -62,6 +62,7 @@ enum PermissionStatus {
     }
 }
 
+@MainActor
 class PermissionManager: ObservableObject {
     static let shared = PermissionManager()
 
@@ -95,8 +96,10 @@ class PermissionManager: ObservableObject {
 
     func checkNotificationPermission() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async {
-                switch settings.authorizationStatus {
+            let status = settings.authorizationStatus
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                switch status {
                 case .authorized, .provisional, .ephemeral:
                     self.notificationStatus = .authorized
                 case .denied:
@@ -112,7 +115,7 @@ class PermissionManager: ObservableObject {
 
     // MARK: - Permission Requests with Retry
 
-    func requestPermission(_ type: PermissionType, completion: @escaping (Bool) -> Void) {
+    func requestPermission(_ type: PermissionType, completion: @Sendable @escaping (Bool) -> Void) {
         let currentRetry = retryCount[type] ?? 0
 
         if currentRetry >= maxRetries {
@@ -133,7 +136,7 @@ class PermissionManager: ObservableObject {
         }
     }
 
-    private func requestScreenRecording(completion: @escaping (Bool) -> Void) {
+    private func requestScreenRecording(completion: @Sendable @escaping (Bool) -> Void) {
         if #available(macOS 10.15, *) {
             let wasAuthorized = CGPreflightScreenCaptureAccess()
             if !wasAuthorized {
@@ -150,10 +153,10 @@ class PermissionManager: ObservableObject {
         }
     }
 
-    private func requestAccessibility(completion: @escaping (Bool) -> Void) {
+    private func requestAccessibility(completion: @Sendable @escaping (Bool) -> Void) {
         let wasAuthorized = AXIsProcessTrusted()
         if !wasAuthorized {
-            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+            let options = ["AXTrustedCheckOptionPrompt": true]
             let _ = AXIsProcessTrustedWithOptions(options as CFDictionary)
 
             // Check again after a delay
@@ -166,7 +169,7 @@ class PermissionManager: ObservableObject {
         }
     }
 
-    private func requestNotifications(completion: @escaping (Bool) -> Void) {
+    private func requestNotifications(completion: @Sendable @escaping (Bool) -> Void) {
         let center = UNUserNotificationCenter.current()
         center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             DispatchQueue.main.async {
@@ -270,11 +273,11 @@ class PermissionManager: ObservableObject {
 
     // MARK: - Convenience Methods
 
-    func requestAccessibilityPermission(completion: @escaping (Bool) -> Void) {
+    func requestAccessibilityPermission(completion: @Sendable @escaping (Bool) -> Void) {
         requestPermission(.accessibility, completion: completion)
     }
 
-    func requestScreenRecordingPermission(completion: @escaping (Bool) -> Void) {
+    func requestScreenRecordingPermission(completion: @Sendable @escaping (Bool) -> Void) {
         requestPermission(.screenRecording, completion: completion)
     }
 

@@ -58,6 +58,7 @@ final class CaptureLibraryViewModel: ObservableObject {
         }
     }
 
+    @MainActor
     deinit {
         if let changeObserver {
             NotificationCenter.default.removeObserver(changeObserver)
@@ -778,9 +779,13 @@ private struct CaptureLibraryListRowView: View {
                 image = nil
                 return
             }
-            image = await Task.detached(priority: .utility) {
-                NSImage(contentsOfFile: url.path)
-            }.value
+            if let data = await Task.detached(priority: .utility, operation: { () -> Data? in
+                try? Data(contentsOf: url)
+            }).value {
+                image = NSImage(data: data)
+            } else {
+                image = nil
+            }
         }
     }
 }
@@ -823,9 +828,13 @@ private struct CaptureLibraryGridItemView: View {
                 image = nil
                 return
             }
-            image = await Task.detached(priority: .utility) {
-                NSImage(contentsOfFile: url.path)
-            }.value
+            if let data = await Task.detached(priority: .utility, operation: { () -> Data? in
+                try? Data(contentsOf: url)
+            }).value {
+                image = NSImage(data: data)
+            } else {
+                image = nil
+            }
         }
     }
 }
@@ -881,11 +890,13 @@ struct CaptureLibraryCommands: Commands {
     }
 }
 
+#if DEBUG && canImport(PreviewsMacros)
 #Preview("Capture Library") {
     CaptureLibraryRootView()
         .environmentObject(AppSettings.shared)
         .frame(width: 1100, height: 820)
 }
+#endif
 
 private struct CaptureLibraryInspectorView: View {
     let item: CaptureItem
@@ -922,17 +933,21 @@ private struct CaptureLibraryInspectorView: View {
                         .controlSize(.small)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 280)
-            .task(id: previewURL) {
-                guard let previewURL else {
-                    image = nil
-                    return
-                }
-                image = await Task.detached(priority: .utility) {
-                    NSImage(contentsOfFile: previewURL.path)
-                }.value
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
+        .task(id: previewURL) {
+            guard let previewURL else {
+                image = nil
+                return
             }
+            if let data = await Task.detached(priority: .utility, operation: { () -> Data? in
+                try? Data(contentsOf: previewURL)
+            }).value {
+                image = NSImage(data: data)
+            } else {
+                image = nil
+            }
+        }
 
             info
 

@@ -388,20 +388,22 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         postAutomationResult(requestID: request.id, filePath: filePath, ocrText: ocrText, error: error)
     }
 
+    @MainActor
     private func writeAutomationFileAndPost(
         requestID: UUID,
         cgImage: CGImage,
         pointSize: CGSize
     ) {
-        saveQueue.async { [weak self] in
-            guard let self else { return }
-            let path = self.writeAutomationFile(cgImage: cgImage, pointSize: pointSize, requestID: requestID)
-            DispatchQueue.main.async {
-                self.postAutomationResult(requestID: requestID, filePath: path, ocrText: nil, error: path == nil ? NSLocalizedString("intent.error.no_file", value: "生成文件失败", comment: "") : nil)
-            }
-        }
+        let path = writeAutomationFile(cgImage: cgImage, pointSize: pointSize, requestID: requestID)
+        postAutomationResult(
+            requestID: requestID,
+            filePath: path,
+            ocrText: nil,
+            error: path == nil ? NSLocalizedString("intent.error.no_file", value: "生成文件失败", comment: "") : nil
+        )
     }
 
+    @MainActor
     private func writeAutomationFile(cgImage: CGImage, pointSize: CGSize, requestID: UUID) -> String? {
         let bitmapImage = NSBitmapImageRep(cgImage: cgImage)
         bitmapImage.size = pointSize
@@ -1666,8 +1668,8 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
 
     private func resolvedAppInfo(capturedApp: SCRunningApplication?) -> (bundleID: String?, appName: String?, pid: Int?) {
         if let capturedApp {
-            let bundleID = capturedApp.bundleIdentifier ?? previousApp?.bundleIdentifier
-            let appName = capturedApp.applicationName ?? previousApp?.localizedName
+            let bundleID = capturedApp.bundleIdentifier
+            let appName = capturedApp.applicationName
             let pid = Int(capturedApp.processID)
             return (bundleID, appName, pid)
         }
@@ -1764,26 +1766,18 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
     }
 
     /// Save to disk on a background queue, then hop back to main for UI/notifications.
+    @MainActor
     private func saveToDiskAsync(
         cgImage: CGImage,
         pointSize: CGSize,
-        completion: @escaping (String?) -> Void
+        completion: @MainActor @Sendable @escaping (String?) -> Void
     ) {
-        saveQueue.async { [weak self] in
-            guard let self else {
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                return
-            }
-            let savedPath = self.saveToFileAndGetPath(cgImage: cgImage, pointSize: pointSize)
-            DispatchQueue.main.async {
-                completion(savedPath)
-            }
-        }
+        let savedPath = saveToFileAndGetPath(cgImage: cgImage, pointSize: pointSize)
+        completion(savedPath)
     }
 
     /// Save image to file (with DPI metadata) and return the path
+    @MainActor
     private func saveToFileAndGetPath(
         cgImage: CGImage,
         pointSize: CGSize
@@ -1826,13 +1820,7 @@ class ScreenshotService: NSObject, SelectionWindowDelegate {
         }
 
         // Save next sequence number
-        if Thread.isMainThread {
-            AppSettings.shared.screenshotSequence = seq + 1
-        } else {
-            DispatchQueue.main.sync {
-                AppSettings.shared.screenshotSequence = seq + 1
-            }
-        }
+        AppSettings.shared.screenshotSequence = seq + 1
 
         do {
             try data.write(to: URL(fileURLWithPath: savePath))

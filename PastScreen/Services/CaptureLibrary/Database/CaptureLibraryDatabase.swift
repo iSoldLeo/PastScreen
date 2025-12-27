@@ -7,25 +7,33 @@ import CoreGraphics
 import Foundation
 import SQLite3
 
+final class SQLiteHandle: @unchecked Sendable {
+    nonisolated(unsafe) let ptr: OpaquePointer
+
+    nonisolated init(_ ptr: OpaquePointer) {
+        self.ptr = ptr
+    }
+
+    deinit {
+        sqlite3_close(ptr)
+    }
+}
+
 // MARK: - Database
 
 actor CaptureLibraryDatabase {
     private let dbURL: URL
-    private var db: OpaquePointer?
+    private var handle: SQLiteHandle?
+    private var db: OpaquePointer? { handle?.ptr }
 
     init(databaseURL: URL) throws {
         self.dbURL = databaseURL
-        let handle = try Self.openDatabase(at: databaseURL)
-        self.db = handle
-        sqlite3_busy_timeout(handle, 2_000)
-        try Self.configureDatabase(handle)
-        try Self.migrateDatabase(handle)
-    }
-
-    deinit {
-        if let db {
-            sqlite3_close(db)
-        }
+        let raw = try Self.openDatabase(at: databaseURL)
+        let wrapped = SQLiteHandle(raw)
+        self.handle = wrapped
+        sqlite3_busy_timeout(raw, 2_000)
+        try Self.configureDatabase(raw)
+        try Self.migrateDatabase(raw)
     }
 
     // MARK: - Core (static)

@@ -710,6 +710,7 @@ private final class CaptureLibrarySettingsModel: ObservableObject {
         }
     }
 
+    @MainActor
     deinit {
         if let observer {
             NotificationCenter.default.removeObserver(observer)
@@ -1201,8 +1202,10 @@ extension HotKey {
     }
 }
 
+#if DEBUG && canImport(PreviewsMacros)
 #Preview("Settings Window") {
     SettingsView()
         .environmentObject(AppSettings.shared)
         .frame(width: 780, height: 600)
 }
+#endif

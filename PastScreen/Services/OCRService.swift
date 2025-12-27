@@ -68,7 +68,7 @@ struct OCRService {
         }
     }
 
-    static func loadCGImage(from url: URL) -> CGImage? {
+    nonisolated static func loadCGImage(from url: URL) -> CGImage? {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
 
@@ -80,7 +80,7 @@ struct OCRService {
         return CGImageSourceCreateImageAtIndex(source, 0, options as CFDictionary)
     }
 
-    private static func recognizeTextSync(in image: NSImage, region: CGRect?, preferredLanguages: [String]?) throws -> String {
+    nonisolated private static func recognizeTextSync(in image: NSImage, region: CGRect?, preferredLanguages: [String]?) throws -> String {
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             return try recognizeTextSync(in: cgImage, imageSize: image.size, region: region, preferredLanguages: preferredLanguages)
         }
@@ -113,7 +113,7 @@ struct OCRService {
         )
     }
 
-    private static func recognizeTextSync(
+    nonisolated private static func recognizeTextSync(
         in cgImage: CGImage,
         imageSize: CGSize,
         region: CGRect?,
@@ -162,7 +162,7 @@ struct OCRService {
         return try perform(request: request, cgImage: cgImage, requestedLanguages: requestedLanguages)
     }
 
-    private static func perform(
+    nonisolated private static func perform(
         request: VNRecognizeTextRequest,
         cgImage: CGImage,
         requestedLanguages: [String]
@@ -189,7 +189,7 @@ struct OCRService {
         return lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private static func normalizeRecognitionLanguages(
+    nonisolated private static func normalizeRecognitionLanguages(
         _ preferredLanguages: [String]?,
         recognitionLevel: VNRequestTextRecognitionLevel,
         revision: Int
@@ -221,7 +221,7 @@ struct OCRService {
         return prioritizeVisionRecognitionLanguages(out)
     }
 
-    private static func mapVisionLanguage(_ language: String, supported: Set<String>) -> String? {
+    nonisolated private static func mapVisionLanguage(_ language: String, supported: Set<String>) -> String? {
         let trimmed = language.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
@@ -254,7 +254,7 @@ struct OCRService {
         return nil
     }
 
-    private static func prioritizeVisionRecognitionLanguages(_ languages: [String]) -> [String] {
+    nonisolated private static func prioritizeVisionRecognitionLanguages(_ languages: [String]) -> [String] {
         guard !languages.isEmpty else { return [] }
 
         let containsChinese = languages.contains("zh-Hans") || languages.contains("zh-Hant")
@@ -266,6 +266,9 @@ struct OCRService {
         if languages.contains("zh-Hant") { out.append("zh-Hant") }
         if languages.contains("zh-Hans") { out.append("zh-Hans") }
         if languages.contains("en-US") { out.append("en-US") }
+
+        // 如果最终列表为空，直接返回原始语言列表，避免 Vision 断言或空数组导致的崩溃
+        guard !out.isEmpty else { return languages }
 
         let allowed = Set(out)
         let dropped = languages.filter { !allowed.contains($0) }
@@ -280,7 +283,7 @@ struct OCRService {
     }
 
     /// Vision's regionOfInterest is normalized and origin is bottom-left.
-    private static func normalizeRegionOfInterest(_ rect: CGRect, imageSize: CGSize) -> CGRect {
+    nonisolated private static func normalizeRegionOfInterest(_ rect: CGRect, imageSize: CGSize) -> CGRect {
         let w = max(1, imageSize.width)
         let h = max(1, imageSize.height)
 
@@ -295,7 +298,7 @@ struct OCRService {
     }
 
     /// Convert a rect in image-space (origin top-left, y down) into a CIImage rect (origin bottom-left).
-    private static func ciRectFromImageRect(_ rect: CGRect, imageSize: CGSize, ciExtent: CGRect) -> CGRect {
+    nonisolated private static func ciRectFromImageRect(_ rect: CGRect, imageSize: CGSize, ciExtent: CGRect) -> CGRect {
         let scaleX = ciExtent.width / max(1, imageSize.width)
         let scaleY = ciExtent.height / max(1, imageSize.height)
         return CGRect(

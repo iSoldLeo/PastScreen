@@ -261,23 +261,23 @@ final class CaptureLibrary {
     @discardableResult
     private func enqueue(
         priority: TaskPriority,
-        operation: @escaping (CaptureLibraryWorker) async throws -> Void
+        operation: @Sendable @escaping (CaptureLibraryWorker) async throws -> Void
     ) -> Bool {
         guard acquireJobSlot() else {
             logWarning("CaptureLibrary backlog full; drop job.", category: "LIB")
             return false
         }
 
+        let worker = CaptureLibrary.shared.worker
+
         Task.detached(priority: priority) { [weak self] in
-            defer {
-                Task { @MainActor [weak self] in
-                    self?.releaseJobSlot()
-                }
-            }
             do {
-                try await operation(CaptureLibrary.shared.worker)
+                try await operation(worker)
             } catch {
                 logError("CaptureLibrary job failed: \(error.localizedDescription)", category: "LIB")
+            }
+            await MainActor.run { [weak self] in
+                self?.releaseJobSlot()
             }
         }
 
@@ -287,23 +287,23 @@ final class CaptureLibrary {
     @discardableResult
     private func enqueueIndexing(
         priority: TaskPriority,
-        operation: @escaping (CaptureLibraryWorker) async throws -> Void
+        operation: @Sendable @escaping (CaptureLibraryWorker) async throws -> Void
     ) -> Bool {
         guard acquireIndexSlot() else {
             logWarning("CaptureLibrary indexing backlog full; drop job.", category: "LIB")
             return false
         }
 
+        let worker = CaptureLibrary.shared.worker
+
         Task.detached(priority: priority) { [weak self] in
-            defer {
-                Task { @MainActor [weak self] in
-                    self?.releaseIndexSlot()
-                }
-            }
             do {
-                try await operation(CaptureLibrary.shared.worker)
+                try await operation(worker)
             } catch {
                 logError("CaptureLibrary indexing job failed: \(error.localizedDescription)", category: "LIB")
+            }
+            await MainActor.run { [weak self] in
+                self?.releaseIndexSlot()
             }
         }
 
@@ -318,6 +318,7 @@ final class CaptureLibrary {
         return true
     }
 
+    @MainActor
     private func releaseJobSlot() {
         pendingLock.lock()
         pendingJobs = max(0, pendingJobs - 1)
@@ -332,6 +333,7 @@ final class CaptureLibrary {
         return true
     }
 
+    @MainActor
     private func releaseIndexSlot() {
         indexingLock.lock()
         pendingIndexJobs = max(0, pendingIndexJobs - 1)

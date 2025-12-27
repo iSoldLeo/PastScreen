@@ -130,6 +130,7 @@ private final class CaptureLibraryMenuModel: ObservableObject {
     private var observer: Any?
     private let rootURL: URL? = try? CaptureLibraryFileStore.defaultRootURL()
 
+    @MainActor
     deinit {
         if let observer {
             NotificationCenter.default.removeObserver(observer)

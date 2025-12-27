@@ -15,8 +15,13 @@ private let _bundleSwizzleOnce: Void = {
 }()
 
 private class SwizzledBundle: Bundle, @unchecked Sendable {
-    override func localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
-        if let bundle = activeLanguageBundle {
+    nonisolated override init?(path: String) {
+        super.init(path: path)
+    }
+
+    nonisolated override func localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
+        let bundle = MainActor.assumeIsolated { activeLanguageBundle }
+        if let bundle {
             return bundle.localizedString(forKey: key, value: value, table: tableName)
         }
         return super.localizedString(forKey: key, value: value, table: tableName)
@@ -25,6 +30,7 @@ private class SwizzledBundle: Bundle, @unchecked Sendable {
 
 extension Bundle {
     /// Switch localization bundle at runtime. Pass nil to use system.
+    @MainActor
     static func setAppLanguage(_ code: String?) {
         _ = _bundleSwizzleOnce
 

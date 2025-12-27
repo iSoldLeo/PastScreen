@@ -126,12 +126,16 @@ struct TutorialContentView: View {
                     onRequest: {
                         permissionManager.requestPermission(.screenRecording) { granted in
                             if !granted {
-                                openSystemPreferencesPrivacy(pane: "ScreenCapture")
+                                Task { @MainActor in
+                                    openSystemPreferencesPrivacy(pane: "ScreenCapture")
+                                }
                             }
                         }
                     },
                     onOpenSettings: {
-                        openSystemPreferencesPrivacy(pane: "ScreenCapture")
+                        Task { @MainActor in
+                            openSystemPreferencesPrivacy(pane: "ScreenCapture")
+                        }
                     }
                 )
 
@@ -142,12 +146,16 @@ struct TutorialContentView: View {
                     onRequest: {
                         permissionManager.requestPermission(.accessibility) { granted in
                             if !granted {
-                                openSystemPreferencesPrivacy(pane: "Accessibility")
+                                Task { @MainActor in
+                                    openSystemPreferencesPrivacy(pane: "Accessibility")
+                                }
                             }
                         }
                     },
                     onOpenSettings: {
-                        openSystemPreferencesPrivacy(pane: "Accessibility")
+                        Task { @MainActor in
+                            openSystemPreferencesPrivacy(pane: "Accessibility")
+                        }
                     }
                 )
 

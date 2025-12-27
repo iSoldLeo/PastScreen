@@ -160,12 +160,15 @@ actor CaptureLibrarySemanticSearchService {
     private func scheduleEmbeddingWrites(updates: [(id: UUID, embedding: Data, sourceHash: String)], config: Config) {
         guard !updates.isEmpty else { return }
         let limited = Array(updates.prefix(40))
-        Task.detached(priority: .background) {
+        let modelName = config.modelName
+        let dim = config.dim
+
+        Task(priority: .background) {
             for update in limited {
                 await CaptureLibrary.shared.updateEmbedding(
                     for: update.id,
-                    model: config.modelName,
-                    dim: config.dim,
+                    model: modelName,
+                    dim: dim,
                     embedding: update.embedding,
                     sourceHash: update.sourceHash
                 )
@@ -271,4 +274,3 @@ actor CaptureLibrarySemanticSearchService {
         return v.map { $0 * inv }
     }
 }
-
