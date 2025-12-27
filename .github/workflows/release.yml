@@ -18,10 +18,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Swift toolchain (Swift 6)
-        uses: swift-actions/setup-swift@v3
+      - name: Select Xcode 26.1.1 (17B100)
+        uses: maxim-lobanov/setup-xcode@v1
         with:
-          swift-version: "6.2.1"
+          xcode-version: "26.1.1"
 
       - name: Show toolchain versions
         run: |
