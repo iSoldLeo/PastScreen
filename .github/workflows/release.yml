@@ -10,13 +10,23 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
     env:
       APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID || 'com.iSoldLeo.PastScreen-CN' }}
       DEVELOPMENT_TEAM: ${{ vars.DEVELOPMENT_TEAM || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Swift toolchain (Swift 6)
+        uses: swift-actions/setup-swift@v3
+        with:
+          swift-version: "6.2.1"
+
+      - name: Show toolchain versions
+        run: |
+          xcodebuild -version
+          swift --version
 
       - name: Decode signing certificate
         env:
@@ -55,6 +65,7 @@ jobs:
             CONFIGURATION_BUILD_DIR=build/Release-arm64 \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Development" \
+            TOOLCHAINS=swift \
             "${EXTRA_ARGS[@]}"
 
       - name: Build app (x86_64)
@@ -78,6 +89,7 @@ jobs:
             CONFIGURATION_BUILD_DIR=build/Release-x86_64 \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Development" \
+            TOOLCHAINS=swift \
             "${EXTRA_ARGS[@]}"
 
       - name: Package zips
