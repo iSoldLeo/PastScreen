@@ -5,10 +5,10 @@
 <p align="center">极速截图，自动进剪贴板。原生应用，小而快。</p>
 <p align="center">
   <a href="https://www.apple.com/macos/">
-    <img src="https://img.shields.io/badge/platform-macOS%2014.6+-blue.svg" alt="Platform macOS 14.6+">
+    <img src="https://img.shields.io/badge/platform-macOS%2015.0+-blue.svg" alt="Platform macOS 15.0+">
   </a>
   <a href="https://swift.org/">
-    <img src="https://img.shields.io/badge/Swift-5.9-orange.svg" alt="Swift 5.9">
+    <img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift 6.0">
   </a>
   <br>
   <a href="./README-EN.md" style="color:#0a84ff; font-weight:600; text-decoration:none;">English README</a>
