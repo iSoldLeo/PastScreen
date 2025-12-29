@@ -920,8 +920,6 @@ class ScreenshotService: NSObject, @MainActor SelectionWindowDelegate {
         // Send notification without changing activation policy
         // (avoids Dock icon flash that confuses users)
         UNUserNotificationCenter.current().add(request) { _ in }
-
-        DynamicIslandManager.shared.show(message: "已保存", duration: 3.0)
     }
 
     private func performCapture(
